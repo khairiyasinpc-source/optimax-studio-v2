@@ -1,3 +1,4 @@
+import {cleanResponsive} from './responsive.js'
 import {defaultPages,defaultNavigation,cleanPages,cleanBuilders,cleanGradients} from './builder.js'
 export const initialContent = {
   hero: {
@@ -76,6 +77,7 @@ export const initialContent = {
     {id:'news',label:'News',visible:true,locked:false},
     {id:'enquiry',label:'Enquiry',visible:true,locked:false}
   ],
+  responsiveStyles: {tablet:{},mobile:{}},
   elementStyles: {},
   mediaSettings: {},
   sectionStyles: {},
@@ -97,11 +99,12 @@ export function deepMerge(base, saved) {
     if (!Object.hasOwn(base,key) || key==='__proto__'||key==='constructor'||key==='prototype') continue
     const value=saved[key],template=base[key]
     if(key==='homepageOrder' && Array.isArray(value))result[key]=Array.from(new Set(value.filter(id=>typeof id==='string'&&/^[a-zA-Z0-9_-]+$/.test(id)))).slice(0,300)
+    else if(key==='responsiveStyles')result[key]=cleanResponsive(value)
     else if(key==='pages')result[key]=cleanPages(value)
     else if(key==='builderBlocks')result[key]=cleanBuilders(value)
     else if(key==='gradients')result[key]=cleanGradients(value)
     else if(key==='navigation' && Array.isArray(value))result[key]=value.slice(0,25).filter(v=>v&&typeof v.label==='string'&&typeof v.href==='string').map(v=>({label:v.label.slice(0,90),href:v.href.slice(0,250)}))
-    else if(key==='mediaAssets' && Array.isArray(value))result[key]=value.slice(0,100).filter(v=>v&&typeof v.id==='string'&&/^media\/[a-zA-Z0-9._-]+$/.test(v.path||'')).map(v=>({id:v.id.slice(0,90),name:String(v.name||'Media').slice(0,120),path:v.path,kind:['video','gif','image','icon'].includes(v.kind)?v.kind:'image'}))
+    else if(key==='mediaAssets' && Array.isArray(value))result[key]=value.slice(0,100).filter(v=>v&&typeof v.id==='string'&&/^media\/[a-zA-Z0-9._-]+$/.test(v.path||'')).map(v=>({id:v.id.slice(0,90),name:String(v.name||'Media').slice(0,120),path:v.path,kind:['video','gif','image','icon'].includes(v.kind)?v.kind:'image',size:Math.max(0,Number(v.size)||0)}))
     else if(key==='previewAssets' && value && typeof value==='object')result[key]=Object.fromEntries(Object.entries(value).filter(([k,v])=>/^media\/[a-zA-Z0-9._-]+$/.test(k)&&typeof v==='string'&&v.startsWith('blob:')))
     else if (key==='sections' && Array.isArray(value)) {
       const known=new Map(template.map(s=>[s.id,s]));const seen=new Set()
@@ -113,7 +116,7 @@ export function deepMerge(base, saved) {
       const permitted=key==='elementStyles'?['fontSize','fontWeight','color','textAlign','lineHeight','letterSpacing','fontFamily','mobileFontSize','tabletFontSize','paddingTop','paddingRight','paddingBottom','paddingLeft','marginTop','marginRight','marginBottom','marginLeft','background','borderRadius','borderColor','borderWidth','width','height','opacity']:key==='mediaSettings'?['positionX','positionY','fit','height','mobileSrc','poster','mobilePositionX','mobilePositionY','videoLoop','showControls']:['background','paddingTop','paddingBottom','paddingLeft','paddingRight','gap','columns','alignItems']
       const map=Object.create(null)
       for (const [path,attrs] of Object.entries(value)) {
-        if (!/^[a-zA-Z0-9.]+$/.test(path)||!attrs||typeof attrs!=='object') continue
+        if (!/^[a-zA-Z0-9._-]+$/.test(path)||!attrs||typeof attrs!=='object') continue
         map[path]={};for(const [attribute,raw] of Object.entries(attrs))if(permitted.includes(attribute)&& (typeof raw==='string'||typeof raw==='number'||typeof raw==='boolean'))map[path][attribute]=raw
       }
       result[key]=map

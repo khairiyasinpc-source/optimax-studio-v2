@@ -1,0 +1,185 @@
+{
+  "hero": {
+    "eyebrow": "TRUSTED SINCE 1995",
+    "title": "See Life\nClearly.",
+    "body": "Professional eye care for every stage of life.\nFrom advanced technology to experienced specialists,\nwe’re with you on your journey to a brighter tomorrow.",
+    "image": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1600&q=85&fit=crop"
+  },
+  "features": [
+    {
+      "title": "Experienced Eye Specialists",
+      "detail": "Guiding you at every stage"
+    },
+    {
+      "title": "Advanced Technology",
+      "detail": "For precise and safer solutions"
+    },
+    {
+      "title": "Comprehensive Range of Care",
+      "detail": "From prevention to treatment"
+    },
+    {
+      "title": "Nationwide Locations",
+      "detail": "Easier access to quality care"
+    }
+  ],
+  "treatmentSection": {
+    "eyebrow": "OUR TREATMENTS",
+    "title": "Complete Eye Care\nfor Every Stage of Life",
+    "body": "From clearer vision to healthier eyes, we offer a comprehensive range of treatments backed by experience, technology and a team you can trust."
+  },
+  "treatments": [
+    {
+      "title": "Laser Vision Correction",
+      "desc": "Freedom from glasses and contact lenses.",
+      "image": "https://images.unsplash.com/photo-1559757175-0eb30cd8c063?w=700&q=85&fit=crop"
+    },
+    {
+      "title": "Cataract Surgery",
+      "desc": "Clearer vision for a brighter tomorrow.",
+      "image": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=700&q=85&fit=crop"
+    },
+    {
+      "title": "Children’s Eye Care",
+      "desc": "Supporting your child’s vision for a brighter future.",
+      "image": "https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=700&q=85&fit=crop"
+    },
+    {
+      "title": "Eye Disease Management",
+      "desc": "Early detection for healthier eyes.",
+      "image": "https://images.unsplash.com/photo-1494869042583-f6c911f04b4c?w=700&q=85&fit=crop"
+    }
+  ],
+  "about": {
+    "eyebrow": "TRUSTED BY MALAYSIANS",
+    "title": "for Over 20 Years",
+    "body": "With over 31 years of expertise, we combine advanced technology with experienced specialists to provide eye care you can trust.",
+    "image": "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=1100&q=85&fit=crop"
+  },
+  "solutions": {
+    "title": "Solutions for Clearer Vision",
+    "cards": [
+      {
+        "title": "Laser Vision Correction",
+        "desc": "Minimally invasive, and tailored for your lifestyle.",
+        "image": "https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=900&q=85&fit=crop"
+      },
+      {
+        "title": "Cataract Surgery",
+        "desc": "Restore clearer, sharper and brighter vision with advanced technology.",
+        "image": "https://images.unsplash.com/photo-1494869042583-f6c911f04b4c?w=700&q=85&fit=crop"
+      },
+      {
+        "title": "Children’s Eye Care",
+        "desc": "Early detection and personalised care for your child’s future.",
+        "image": "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=1000&q=85&fit=crop"
+      }
+    ]
+  },
+  "appointment": {
+    "title": "Book Your Eye Check Today",
+    "body": "Take the first step towards clearer vision with a free eye check. Whether it’s for you or your loved ones, our team is here to provide personalised care and trusted advice.",
+    "image": "https://images.unsplash.com/photo-1551601651-2a8555f1a136?w=1200&q=85&fit=crop"
+  },
+  "news": {
+    "title": "What’s New At Optimax",
+    "cards": [
+      {
+        "title": "Government & Corporate Initiatives",
+        "desc": "Bringing quality eye care to Malaysians through nationwide programmes.",
+        "image": "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=900&q=85&fit=crop"
+      },
+      {
+        "title": "Advancements in Eye Care Technology",
+        "desc": "Staying at the forefront of innovation for clearer, safer and better vision.",
+        "image": "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=900&q=85&fit=crop"
+      },
+      {
+        "title": "Patient Success Stories",
+        "desc": "Real stories of brighter futures from our patients.",
+        "image": "https://images.unsplash.com/photo-1584982751601-97dcc096659c?w=900&q=85&fit=crop"
+      }
+    ]
+  },
+  "enquiry": {
+    "eyebrow": "GET IN TOUCH",
+    "title": "Enquire With Us",
+    "body": "Have questions or would like to make an appointment?\nFill in the form and our team will get back to you soon."
+  },
+  "buttons": {
+    "headerBook": {
+      "width": null,
+      "height": null,
+      "radius": null,
+      "fontSize": null,
+      "label": "Book Free Eye Check",
+      "href": "#enquiry"
+    },
+    "heroBook": {
+      "width": null,
+      "height": null,
+      "radius": null,
+      "fontSize": null,
+      "label": "Book Free Eye Check",
+      "href": "#enquiry"
+    },
+    "heroExplore": {
+      "width": null,
+      "height": null,
+      "radius": null,
+      "fontSize": null,
+      "label": "Explore Treatments",
+      "href": "#treatments"
+    },
+    "treatmentView": {
+      "width": null,
+      "height": null,
+      "radius": null,
+      "fontSize": null,
+      "label": "View All Treatments",
+      "href": "#solutions"
+    },
+    "solutionsView": {
+      "width": null,
+      "height": null,
+      "radius": null,
+      "fontSize": null,
+      "label": "View All Treatments",
+      "href": "#treatments"
+    },
+    "appointmentBook": {
+      "width": null,
+      "height": null,
+      "radius": null,
+      "fontSize": null,
+      "label": "Book Free Eye Check",
+      "href": "#enquiry"
+    },
+    "newsView": {
+      "width": null,
+      "height": null,
+      "radius": null,
+      "fontSize": null,
+      "label": "View All",
+      "href": "#enquiry"
+    },
+    "footerBook": {
+      "width": null,
+      "height": null,
+      "radius": null,
+      "fontSize": null,
+      "label": "Book Free Eye Check",
+      "href": "#enquiry"
+    }
+  },
+  "theme": {
+    "primary": "#08294b",
+    "text": "#102b4e",
+    "buttonHeight": 48,
+    "buttonWidth": 0,
+    "buttonRadius": 40,
+    "buttonFontSize": 12,
+    "sectionPadding": 70,
+    "cardRadius": 12
+  }
+}

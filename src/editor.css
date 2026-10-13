@@ -82,3 +82,7 @@
 .v2-quick-actions button:disabled{opacity:.35}
 .studio-v2[data-studio-theme="dark"] .v2-palette,.studio-v2[data-studio-theme="dark"] .v2-edit-bar{background:#1b3045;border-color:#36536c}
 .studio-v2[data-studio-theme="dark"] .v2-palette-toggle,.studio-v2[data-studio-theme="dark"] .v2-palette-grid button,.studio-v2[data-studio-theme="dark"] .v2-quick-actions button{background:#25425f;color:#d7eaff;border-color:#3e5f7a}
+
+.studio-v2-teamstatus{min-height:28px;display:flex;gap:10px;align-items:center;padding:5px 19px;font-size:11px;background:var(--v2-surface);border-bottom:1px solid var(--v2-border);color:var(--v2-ink)}.studio-v2-teamstatus button{background:#e8f2ff;color:#1c63ba;padding:5px 8px;border-radius:5px}.studio-v2[data-studio-theme="dark"]{--v2-ink:#d9e6f3;--v2-surface:#182432;--v2-border:#314457}.studio-v2-dialog form input,.studio-v2-dialog input[type=password]{width:100%}
+
+.studio-v2-framefit{flex-shrink:0;position:relative}

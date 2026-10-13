@@ -1,13 +1,18 @@
 {
   "name": "optimax-website",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "vite build && node scripts/create-page-routes.mjs",
+    "build": "node scripts/build.mjs",
     "preview": "vite preview --host 0.0.0.0",
-    "test:logic": "node tests/logic.test.mjs && node tests/builder.test.mjs && node tests/upgrade.test.mjs && node tests/designer-core.test.mjs"
+    "test:logic": "node tests/logic.test.mjs && node tests/builder.test.mjs && node tests/upgrade.test.mjs && node tests/designer-core.test.mjs && node tests/regression.test.mjs && node tests/server.test.mjs && node tests/publish.test.mjs",
+    "test:browser": "node tests/browser.test.mjs",
+    "test:team": "node tests/team-browser.test.mjs",
+    "build:team": "vite build --base=/",
+    "deploy:team": "wrangler deploy",
+    "test": "npm run test:logic"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
@@ -16,6 +21,11 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^6.0.5"
+    "playwright": "1.62.1",
+    "vite": "^6.0.5",
+    "wrangler": "^4.149.0"
+  },
+  "engines": {
+    "node": ">=22.13.0"
   }
 }
