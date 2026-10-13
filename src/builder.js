@@ -20,7 +20,7 @@ export const pathSlug=(pathname,base)=>{
   const part=pathname.startsWith(basePath)?pathname.slice(basePath.length):''
   return validSlug(part.split('/')[0])
 }
-export const newSection=(type='blank',id=`section${Date.now().toString(36)}`)=>{
+export const newSection=(type='blank',id=`section${crypto.randomUUID().replaceAll('-','')}`)=>{
   const block=(kind,label,value)=>({id:`b${Math.random().toString(36).slice(2,9)}`,kind,label,value})
   const heading=()=>block('text','Heading','Your heading goes here')
   const body=()=>block('text','Description','Add your content here. Click any element to edit.')
@@ -63,7 +63,7 @@ export function cleanBuilders(blocks){
     if(!/^section[a-zA-Z0-9_-]+$/.test(id)||!b||typeof b!=='object')continue
     const type=sectionTemplates.some(t=>t.type===b.type)?b.type:'blank'
     result[id]={id,type,label:String(b.label||'Section').slice(0,100),visible:b.visible!==false,locked:b.locked===true,
-      blocks:Array.isArray(b.blocks)?b.blocks.slice(0,40).filter(x=>x&&['text','image','video','icon','button','spacer'].includes(x.kind)).map(x=>({id:String(x.id||'b').replace(/[^a-zA-Z0-9_-]/g,'').slice(0,50),kind:x.kind,label:String(x.label||x.kind).slice(0,80),value:x.kind==='button'?{label:String(x.value?.label||'Learn More').slice(0,160),href:String(x.value?.href||'#').slice(0,250)}:String(x.value||'').slice(0,300000),style:cleanBlockStyle(x.style)})):[]}
+      blocks:Array.isArray(b.blocks)?b.blocks.slice(0,40).filter(x=>x&&['text','image','video','icon','button','spacer'].includes(x.kind)).map(x=>({id:String(x.id||'b').replace(/[^a-zA-Z0-9_-]/g,'').slice(0,50),kind:x.kind,label:String(x.label||x.kind).slice(0,80),value:x.kind==='button'?{label:String(x.value?.label||'Learn More').slice(0,160),href:String(x.value?.href||'#').slice(0,250),...Object.fromEntries(['width','height','radius','fontSize'].filter(k=>typeof x.value?.[k]==='number'&&Number.isFinite(x.value[k])).map(k=>[k,Math.max(0,Math.min(2000,x.value[k]))])),...Object.fromEntries(['bg','color'].filter(k=>/^#[a-f0-9]{6}$/i.test(x.value?.[k]||'')).map(k=>[k,x.value[k]]))}:String(x.value||'').slice(0,300000),style:cleanBlockStyle(x.style)})):[]}
   }
   return result
 }
