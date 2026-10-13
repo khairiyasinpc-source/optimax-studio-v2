@@ -1,0 +1,38 @@
+name: Verify OPTIMAX release
+on:
+  push:
+    branches: [main, 'release/**']
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run test:logic
+      - run: npx playwright install --with-deps chromium
+      - name: Browser regression on production build
+        run: |
+          npm run build -- --base=/optimax-studio-v2/
+          npm run preview -- --host 127.0.0.1 --port 5173 > /tmp/optimax-preview.log 2>&1 &
+          for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:5173/optimax-studio-v2/ >/dev/null && break || sleep 1; done
+          TEST_URL=http://127.0.0.1:5173/optimax-studio-v2/ SCREENSHOT_PATH=browser-test.png npm run test:browser
+      - name: Build authenticated studio and test collaboration
+        run: |
+          VITE_TEAM_MODE=true npm run build:team -- --outDir dist-team
+          npm run test:team
+      - name: Compile Worker deployment
+        run: npx wrangler deploy --dry-run --outdir /tmp/optimax-worker
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-verification
+          path: |
+            browser-test.png
+            team-test.png

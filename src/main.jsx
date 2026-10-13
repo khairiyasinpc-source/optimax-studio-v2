@@ -1,3 +1,6 @@
+import TeamGate from './TeamGate.jsx'
+import {teamMode} from './teamService.js'
+import {elementCSS,useBreakpoint,responsiveValues,cssProps} from './responsive.js'
 import React, { useContext, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ArrowRight, ArrowUpRight, Menu, X, Search, ShieldCheck, Microscope, HeartHandshake, ScanEye, Users, Settings, Instagram, Facebook, Youtube, CheckCircle2 } from 'lucide-react'
@@ -14,7 +17,7 @@ const params = new URLSearchParams(location.search)
 const preview = params.has('preview')
 const previewMessaging=preview||params.has('siteview')
 const edit = params.has('edit') && !preview
-const rootUrl = import.meta.env.BASE_URL || './'
+const rootUrl = new URL(import.meta.env.BASE_URL || './',location.href).pathname
 const baseUrl=new URL(rootUrl,location.href).pathname
 const jsonUrl = rootUrl + 'site-content.json'
 const routeSlug=()=>validSlug(new URLSearchParams(location.search).get('page')||pathSlug(location.pathname,rootUrl))
@@ -29,15 +32,15 @@ function GradientDefs({overlay,id}){
 }
 function EditableIcon({path,defaultName,size=24,strokeWidth=1.7}) {
   const d=useContext(DesignContext),id=React.useId().replace(/:/g,'')
-  const name=readPath(d,path)||defaultName,gradient=readPath(d,`gradients.elements.${path}`)
+  const name=resolveAsset(readPath(d,path)||defaultName,d.previewAssets,rootUrl),gradient=readPath(d,`gradients.elements.${path}`)
   const active=gradient?.enabled&&Array.isArray(gradient.stops)&&gradient.stops.length
-  return <span className={preview?'editable-content editable-icon':''} data-edit-path={preview?path:undefined} data-edit-kind={preview?'icon':undefined} aria-label={preview?`Edit icon ${path}`:undefined}>
+  return <span className={preview?'editable-content editable-icon':''} data-edit-path={preview?path:undefined} data-edit-kind={preview?'icon':undefined} style={elementCSS(d,path)} aria-label={preview?`Edit icon ${path}`:undefined}>
     <IconVisual value={name} size={size} strokeWidth={strokeWidth} stroke={active?`url(#${id})`:'currentColor'}>{active&&<GradientDefs overlay={gradient} id={id}/>}</IconVisual>
   </span>
 }
 
 const DesignContext=React.createContext(initialContent)
-function textStyle(content,path){const value=content.elementStyles?.[path]||{};const style={};for(const k of ['fontSize','fontWeight','color','textAlign','lineHeight','letterSpacing','fontFamily','paddingTop','paddingRight','paddingBottom','paddingLeft','marginTop','marginRight','marginBottom','marginLeft','background','borderRadius','borderColor','borderWidth','width','height','opacity']){if(value[k]!==undefined && value[k]!==null && value[k]!=='')style[k]=(['fontSize','letterSpacing','paddingTop','paddingRight','paddingBottom','paddingLeft','marginTop','marginRight','marginBottom','marginLeft','borderRadius','borderWidth','width','height'].includes(k)&&typeof value[k]==='number')?value[k]+'px':k==='opacity'&&typeof value[k]==='number'?value[k]/100:value[k]}const gradient=overlayCss(readPath(content,`gradients.elements.${path}`));if(gradient){style.backgroundImage=gradient;style.backgroundClip='text';style.WebkitBackgroundClip='text';style.color='transparent';style.WebkitTextFillColor='transparent'}if(value.mobileFontSize)style['--v2-mobile-font-size']=`${value.mobileFontSize}px`;if(value.tabletFontSize)style['--v2-tablet-font-size']=`${value.tabletFontSize}px`;return style}
+function textStyle(content,path){const value={...content.elementStyles?.[path],...responsiveValues(content,path,window.innerWidth<=760?'mobile':window.innerWidth<=1100?'tablet':'desktop')};const style={};for(const k of ['fontSize','fontWeight','color','textAlign','lineHeight','letterSpacing','fontFamily','paddingTop','paddingRight','paddingBottom','paddingLeft','marginTop','marginRight','marginBottom','marginLeft','background','borderRadius','borderColor','borderWidth','width','height','opacity']){if(value[k]!==undefined && value[k]!==null && value[k]!=='')style[k]=(['fontSize','letterSpacing','paddingTop','paddingRight','paddingBottom','paddingLeft','marginTop','marginRight','marginBottom','marginLeft','borderRadius','borderWidth','width','height'].includes(k)&&typeof value[k]==='number')?value[k]+'px':k==='opacity'&&typeof value[k]==='number'?value[k]/100:value[k]}const gradient=overlayCss(readPath(content,`gradients.elements.${path}`));if(gradient){style.backgroundImage=gradient;style.backgroundClip='text';style.WebkitBackgroundClip='text';style.color='transparent';style.WebkitTextFillColor='transparent'}if(value.mobileFontSize)style['--v2-mobile-font-size']=`${value.mobileFontSize}px`;if(value.tabletFontSize)style['--v2-tablet-font-size']=`${value.tabletFontSize}px`;return style}
 function Editable({as:Tag='span',path,children,className='',style={},...rest}){
   const d=useContext(DesignContext)
   return <Tag {...rest} data-edit-path={preview?path:undefined} className={(className||'')+(preview?' editable-content':'')+(d.elementStyles?.[path]?.mobileFontSize?' v2-mobile-font':'')+(d.elementStyles?.[path]?.tabletFontSize?' v2-tablet-font':'')} style={{...style,...textStyle(d,path)}} onDoubleClick={preview?(e=>{e.stopPropagation();e.currentTarget.contentEditable='true';e.currentTarget.focus()}):undefined} onBlur={preview?(e=>{if(e.currentTarget.contentEditable==='true'){e.currentTarget.contentEditable='false';window.parent.postMessage({type:'OPTIMAX_TEXT_CHANGE',path,value:e.currentTarget.innerText},location.origin)}}):undefined}>{children}</Tag>
@@ -50,7 +53,7 @@ function SmartMedia({path,src,alt='',className='',background=false,...rest}){
   const isVideo=/\.(mp4|webm)(?:[?#]|$)/i.test(picked||'')||String(url).startsWith('blob:')&&(d.mediaAssets||[]).some(a=>a.path===picked&&a.kind==='video')
   const gradient=overlayCss(readPath(d,`gradients.elements.${path}`));const [controls,setControls]=useState(false)
   const wrapperClass='v2-media-shell '+(background?'v2-media-background ':'')+className
-  const wrapStyle=textStyle(d,path)
+  const wrapStyle=elementCSS(d,path)
   return <span {...rest} style={wrapStyle} className={wrapperClass} data-edit-path={preview?path:undefined} data-edit-kind={preview?'image':undefined}>
     {!picked&&preview&&<label className="v2-drop-placeholder" data-action="upload" data-media-path={path}><span>＋ Upload image / video</span><input type="file" accept=".png,.jpg,.jpeg,.webp,.svg,.gif,.mp4,.webm" onChange={e=>{const file=e.target.files?.[0];if(file)window.parent.postMessage({type:'OPTIMAX_MEDIA_FILE',path,file},location.origin);e.currentTarget.value=''}}/></label>}
     {!picked?null:isVideo?<video className="v2-media-video" key={url} src={url} poster={resolveAsset(m.poster||'',d.previewAssets,rootUrl)||undefined} autoPlay muted loop={m.videoLoop!==false} playsInline preload="metadata" controls={controls} onClick={()=>m.showControls!==false&&setControls(true)} aria-label={alt||'OPTIMAX video'} style={{objectFit:m.fit||'cover',objectPosition:`${mobile?(m.mobilePositionX??m.positionX??50):(m.positionX??50)}% ${mobile?(m.mobilePositionY??m.positionY??50):(m.positionY??50)}%`}}/>:
@@ -69,14 +72,14 @@ function Btn({d,id,light=false,outline=false}){
   if(data.fontSize!=null)styles.fontSize=data.fontSize+'px'
   if(data.bg)styles.backgroundColor=data.bg
   if(data.color)styles.color=data.color
-  Object.assign(styles,textStyle(d,`buttons.${id}`))
+  Object.assign(styles,elementCSS(d,`buttons.${id}`))
   const overlay=overlayCss(readPath(d,`gradients.elements.buttons.${id}`));if(overlay)styles.backgroundImage=overlay
   return <a data-edit-path={preview?`buttons.${id}`:undefined} data-edit-kind={preview?'button':undefined} href={toHref(data.href||'#enquiry',routeSlug())} style={styles} className={'btn '+(light?'light ':'')+(outline?'outline ':'')+(preview?'editable-content':'')}><span>{data.label}</span><EditableIcon path="icons.buttonArrow" defaultName="ArrowRight" size={16}/></a>
 }
 function Logo({inverse=false}) {
   const d=useContext(DesignContext),key=inverse?'footerLogo':'headerLogo',src=d.branding?.[key]
   const width=d.branding?.[inverse?'footerWidth':'headerWidth']||165
-  return <a href={baseUrl} data-edit-path={preview?`branding.${key}`:undefined} data-edit-kind={preview?'logo':undefined} className={'logo '+(inverse?'inverse':'')+(preview?' editable-content':'')} aria-label="OPTIMAX Home">
+  return <a style={elementCSS(d,`branding.${key}`)} href={baseUrl} data-edit-path={preview?`branding.${key}`:undefined} data-edit-kind={preview?'logo':undefined} className={'logo '+(inverse?'inverse':'')+(preview?' editable-content':'')} aria-label="OPTIMAX Home">
     {src?<img className="brand-logo-image" src={resolveAsset(src,d.previewAssets,rootUrl)} alt="OPTIMAX Eye Specialist" style={{width:`${width}px`,maxWidth:'100%',height:'auto',objectFit:'contain'}}/>:<><span>OPTIMAX<sup>®</sup></span><small>EYE SPECIALIST</small></>}
   </a>
 }
@@ -89,22 +92,26 @@ function Header({d}) {
 }
 function ArrowCircle(){return <span className="arrow-circle"><EditableIcon path="icons.cardArrow" defaultName="ArrowRight" size={15}/></span>}
 function Site({d,activePage='home'}) {
+  const size=useBreakpoint()
   const [sent,setSent]=useState(false),[captcha,setCaptcha]=useState(false)
-  const sectionStyle=id=>{const nativeIndex=d.sections?.findIndex(s=>s.id===id)??-1;const position=d.homepageOrder?.indexOf(id)??-1;const index=position>=0?position:nativeIndex;const row=d.sections?.[nativeIndex];const design=d.sectionStyles?.[id]||{};const g=overlayCss(readPath(d,`gradients.sections.${id}`));return {order:index<0?99:index,display:row?.visible===false?'none':undefined,...(design.background?{backgroundColor:design.background}:{}),...(design.paddingTop!==undefined?{paddingTop:design.paddingTop+'px'}:{}),...(design.paddingBottom!==undefined?{paddingBottom:design.paddingBottom+'px'}:{}),...(design.paddingLeft!==undefined?{paddingLeft:design.paddingLeft+'px'}:{}),...(design.paddingRight!==undefined?{paddingRight:design.paddingRight+'px'}:{}),...(g?{backgroundImage:g}:{})}}
+  const sectionStyle=id=>{const nativeIndex=d.sections?.findIndex(s=>s.id===id)??-1;const position=d.homepageOrder?.indexOf(id)??-1;const index=position>=0?position:nativeIndex;const row=d.sections?.[nativeIndex];const design=d.sectionStyles?.[id]||{};const g=overlayCss(readPath(d,`gradients.sections.${id}`));return {order:index<0?99:index,display:row?.visible===false?'none':undefined,...(design.background?{backgroundColor:design.background}:{}),...(design.paddingTop!==undefined?{paddingTop:design.paddingTop+'px'}:{}),...(design.paddingBottom!==undefined?{paddingBottom:design.paddingBottom+'px'}:{}),...(design.paddingLeft!==undefined?{paddingLeft:design.paddingLeft+'px'}:{}),...(design.paddingRight!==undefined?{paddingRight:design.paddingRight+'px'}:{}),...(g?{backgroundImage:g}:{}),...cssProps(responsiveValues(d,id,size))}}
   const mediaPos=id=>{const m=d.mediaSettings?.[id]||{};return `${m.positionX??50}% ${m.positionY??45}%`}
   const mediaSize=id=>(d.mediaSettings?.[id]?.fit==='contain'?'cover, contain':'cover, cover')
   const heroLayers=gradientBackground(readPath(d,'gradients.sections.hero'))+gradientBackground(readPath(d,'gradients.elements.hero.image')?.enabled?readPath(d,'gradients.elements.hero.image'):d.hero.overlay)
   const appointmentLayers=gradientBackground(readPath(d,'gradients.sections.appointment'))+gradientBackground(readPath(d,'gradients.elements.appointment.image'))
+  const designRef=React.useRef(d);designRef.current=d
   useEffect(() => {
     if (!preview) return
     const onClick = e => {
+      const d=designRef.current
       const target = e.target.closest('[data-edit-path]')
       if (!target) return
       const section=target.closest('[data-section]')?.getAttribute('data-section')
-      if(section&&(d.sections?.find(s=>s.id===section)?.locked||d.builderBlocks?.[section]?.locked))return
+      if(section&&(d.sections?.find(s=>s.id===section)?.locked||d.builderBlocks?.[section]?.locked)){e.preventDefault();e.stopPropagation();return}
+      if(e.target.closest('.v2-resize-corner')||e.target.isContentEditable)return
       const upload=e.target.closest('[data-action="upload"]')
       if(upload){window.parent.postMessage({type:'OPTIMAX_SELECT',path:upload.dataset.mediaPath,kind:'image'},location.origin);return}
-      e.preventDefault(); e.stopPropagation()
+      e.preventDefault()
       document.querySelectorAll('.edit-selected').forEach(el=>el.classList.remove('edit-selected'))
       target.classList.add('edit-selected')
       target.closest('[data-builder-block]')?.classList.add('edit-selected')
@@ -112,8 +119,8 @@ function Site({d,activePage='home'}) {
     }
     document.addEventListener('click',onClick,true)
     return ()=>document.removeEventListener('click',onClick,true)
-  },[d.sections])
-  useEffect(()=>{if(!preview)return;const onFocus=e=>{if(e.origin!==location.origin||e.data?.type!=='OPTIMAX_FOCUS')return;document.querySelectorAll('.edit-selected').forEach(el=>el.classList.remove('edit-selected'));const path=e.data.path;const node=[...document.querySelectorAll('[data-edit-path]')].find(el=>el.dataset.editPath===path);if(node){node.classList.add('edit-selected');node.scrollIntoView({behavior:'smooth',block:'center'})}};window.addEventListener('message',onFocus);return()=>window.removeEventListener('message',onFocus)},[])
+  },[])
+  useEffect(()=>{if(!preview)return;const onFocus=e=>{if(e.origin!==location.origin||e.source!==window.parent||e.data?.type!=='OPTIMAX_FOCUS')return;document.querySelectorAll('.edit-selected').forEach(el=>el.classList.remove('edit-selected'));const path=e.data.path;const node=[...document.querySelectorAll('[data-edit-path]')].find(el=>el.dataset.editPath===path);if(node){node.classList.add('edit-selected');node.scrollIntoView({behavior:'smooth',block:'center'})}};window.addEventListener('message',onFocus);return()=>window.removeEventListener('message',onFocus)},[])
   const submit=e=>{e.preventDefault();if(previewMessaging){alert('Preview only. Form has not been submitted.');return} if(!captcha){alert('Please tick the demo checkbox.');return}const data=new FormData(e.currentTarget); const body=encodeURIComponent([...data.entries()].map(([k,v])=>`${k}: ${v}`).join('\n')); window.location.href='mailto:?subject=OPTIMAX%20Eye%20Check%20Enquiry&body='+body;setSent(true)}
   const varStyle={'--primary':d.theme.primary,'--ink':d.theme.text,'--button-height':d.theme.buttonHeight+'px','--button-width':d.theme.buttonWidth?d.theme.buttonWidth+'px':'auto','--button-radius':d.theme.buttonRadius+'px','--button-font-size':d.theme.buttonFontSize+'px','--section-padding':d.theme.sectionPadding+'px','--card-radius':d.theme.cardRadius+'px','--mobile-section-padding':d.theme.mobileSectionPadding+'px','--body-font':`'${d.theme.bodyFont}',sans-serif`,'--heading-font':`'${d.theme.headingFont}',sans-serif`,'--site-background':d.theme.background}
   return <DesignContext.Provider value={d}><div className="public-site" style={varStyle}><Header d={d}/><main id="top" className="site-sections">{activePage==='home'&&<>
@@ -147,6 +154,7 @@ export function blockCSS(s={}){
   return css
 }
 function BuilderBlock({part,sectionId,index,d}){
+  useBreakpoint()
   const path=`builderBlocks.${sectionId}.blocks.${index}.value`,kind=part.kind,style=part.style||{}
   const [activeDrop,setActiveDrop]=useState(false)
   const dragResize=React.useRef(null)
@@ -154,30 +162,31 @@ function BuilderBlock({part,sectionId,index,d}){
   const resizing=e=>{if(!dragResize.current)return;const {node,startX,startY,width,height}=dragResize.current;node.style.width=Math.round(Math.max(65,Math.min(1600,width+e.clientX-startX)))+'px';node.style.height=Math.round(Math.max(28,Math.min(1600,height+e.clientY-startY)))+'px'}
   const endResize=e=>{if(!dragResize.current)return;e.stopPropagation();const {node}=dragResize.current;dragResize.current=null;window.parent.postMessage({type:'OPTIMAX_RESIZE_BLOCK',path,width:Math.round(node.getBoundingClientRect().width),height:Math.round(node.getBoundingClientRect().height)},location.origin)}
   const makeMove=(e)=>{e.preventDefault();e.stopPropagation();const from=e.dataTransfer.getData('application/x-optimax-move'),newKind=e.dataTransfer.getData('application/x-optimax-kind');if(!from&&!newKind)return
-    const rect=e.currentTarget.getBoundingClientRect(),after=e.clientY>rect.top+rect.height/2
-    if(from){const [oldId,oldIndex]=from.split(':');if(oldId===sectionId)window.parent.postMessage({type:'OPTIMAX_MOVE_BLOCK',sectionId,from:Number(oldIndex),to:index,after},location.origin)}
+    const rect=e.currentTarget.getBoundingClientRect(),after=e.clientY>rect.top+rect.height/2||(Math.abs(e.clientY-rect.top-rect.height/2)<rect.height/3&&e.clientX>rect.left+rect.width/2)
+    if(from){const [oldId,oldIndex]=from.split(':');window.parent.postMessage({type:'OPTIMAX_MOVE_BLOCK',sectionId,fromSection:oldId,from:Number(oldIndex),to:index,after},location.origin)}
     else if(newKind)window.parent.postMessage({type:'OPTIMAX_ADD_BLOCK',sectionId,kind:newKind,index:index+(after?1:0)},location.origin)
     setActiveDrop(false)
   }
   const moveStart=e=>{e.dataTransfer.setData('application/x-optimax-move',`${sectionId}:${index}`);e.dataTransfer.effectAllowed='move'}
   let content
   if(kind==='image'||kind==='video')content=<div className="v2-builder-image"><SmartMedia path={path} src={part.value} alt={part.label}/></div>
-  else if(kind==='button')content=<a className="btn" style={{backgroundColor:style.background||undefined,color:style.color||undefined,borderRadius:style.radius!==undefined?style.radius+'px':undefined}} data-edit-path={preview?path:undefined} data-edit-kind="button" href={toHref(part.value.href||'#enquiry',routeSlug())}>{part.value.label||'Learn More'} <ArrowRight size={16}/></a>
+  else if(kind==='button')content=<a className="btn" style={{backgroundColor:style.background||undefined,color:style.color||undefined,...elementCSS(d,path),backgroundImage:overlayCss(readPath(d,`gradients.elements.${path}`))||undefined,borderRadius:style.radius!==undefined?style.radius+'px':undefined}} data-edit-path={preview?path:undefined} data-edit-kind="button" href={toHref(part.value.href||'#enquiry',routeSlug())}>{part.value.label||'Learn More'} <IconVisual value={d.icons.buttonArrow} size={16}/></a>
   else if(kind==='icon')content=<EditableIcon path={path} defaultName="Eye" size={42}/>
   else if(kind==='spacer')content=<div className="v2-builder-spacer" aria-label="Spacing block"/>
   else content=<Editable as={part.label==='Heading'?'h2':'p'} style={{color:style.color||undefined,fontSize:style.fontSize?style.fontSize+'px':undefined,fontWeight:style.fontWeight||undefined,textAlign:style.textAlign||undefined}} path={path}>{part.value}</Editable>
-  return <div data-builder-block={part.id} data-edit-path={preview?path:undefined} data-edit-kind={preview?kind==='video'?'image':kind:undefined} className={'v2-builder-block'+(activeDrop?' v2-drop-active':'')} style={blockCSS(style)} draggable={preview} onDragStart={preview?moveStart:undefined} onDragOver={preview?(e=>{e.preventDefault();e.stopPropagation();setActiveDrop(true)}):undefined} onDragLeave={preview?(()=>setActiveDrop(false)):undefined} onDrop={preview?makeMove:undefined} >{content}{preview&&<span className="v2-resize-corner" title="Drag to resize" onPointerDown={beginResize} onPointerMove={resizing} onPointerUp={endResize} aria-label="Drag to resize element">◢</span>}</div>
+  return <div data-builder-block={part.id} data-edit-path={preview?path:undefined} data-edit-kind={preview?kind==='video'?'image':kind:undefined} className={'v2-builder-block'+(activeDrop?' v2-drop-active':'')} style={{...blockCSS(style),...elementCSS(d,path),backgroundImage:kind==='text'||kind==='icon'||kind==='image'||kind==='video'?undefined:overlayCss(readPath(d,`gradients.elements.${path}`))||undefined}} draggable={preview&&!d.builderBlocks[sectionId].locked} onDragStart={preview?moveStart:undefined} onDragOver={preview&&!d.builderBlocks[sectionId].locked?(e=>{e.preventDefault();e.stopPropagation();setActiveDrop(true)}):undefined} onDragLeave={preview?(()=>setActiveDrop(false)):undefined} onDrop={preview&&!d.builderBlocks[sectionId].locked?makeMove:undefined} >{content}{preview&&!d.builderBlocks[sectionId].locked&&<span className="v2-resize-corner" title="Drag to resize" onPointerDown={beginResize} onPointerMove={resizing} onPointerUp={endResize} onPointerCancel={()=>{dragResize.current=null}} aria-label="Drag to resize element">◢</span>}</div>
 }
 function CustomSections({d,activePage}){
+  const size=useBreakpoint()
   const page=d.pages?.find(p=>p.id===activePage)||d.pages?.[0]
   return (page?.sections||[]).map((id,index)=>{
     const block=d.builderBlocks?.[id];if(!block||block.visible===false)return null
-    const design=d.sectionStyles?.[id]||{},gradient=overlayCss(readPath(d,`gradients.sections.${id}`))
+    const design={...d.sectionStyles?.[id],...(size==='mobile'?{columns:1}:{}),...responsiveValues(d,id,size)},gradient=overlayCss(readPath(d,`gradients.sections.${id}`))
     const all=(block.blocks||[]).map((part,i)=><BuilderBlock key={part.id} part={part} sectionId={id} index={i} d={d}/>)
-    const takeDrop=e=>{e.preventDefault();const kind=e.dataTransfer.getData('application/x-optimax-kind'),from=e.dataTransfer.getData('application/x-optimax-move');if(kind)window.parent.postMessage({type:'OPTIMAX_ADD_BLOCK',sectionId:id,kind,index:block.blocks.length},location.origin);else if(from){const [oldId,oldIndex]=from.split(':');if(oldId===id)window.parent.postMessage({type:'OPTIMAX_MOVE_BLOCK',sectionId:id,from:Number(oldIndex),to:block.blocks.length,after:false},location.origin)}}
+    const takeDrop=e=>{e.preventDefault();const kind=e.dataTransfer.getData('application/x-optimax-kind'),from=e.dataTransfer.getData('application/x-optimax-move');if(kind)window.parent.postMessage({type:'OPTIMAX_ADD_BLOCK',sectionId:id,kind,index:block.blocks.length},location.origin);else if(from){const [oldId,oldIndex]=from.split(':');window.parent.postMessage({type:'OPTIMAX_MOVE_BLOCK',sectionId:id,fromSection:oldId,from:Number(oldIndex),to:block.blocks.length,after:false},location.origin)}}
     const columns=Math.max(1,Math.min(3,Number(design.columns)||1))
-    return <section key={id} data-section={id} className={`v2-builder-section v2-builder-${block.type} v2-builder-custom-layout`} style={{order:activePage==='home'?(d.homepageOrder?.includes(id)?d.homepageOrder.indexOf(id):100+index):index,backgroundColor:design.background||undefined,backgroundImage:gradient||undefined,paddingTop:design.paddingTop??undefined,paddingBottom:design.paddingBottom??undefined,paddingLeft:design.paddingLeft??undefined,paddingRight:design.paddingRight??undefined}}>
-      <div className="container v2-builder-content v2-editable-layout" style={{display:'grid',gridTemplateColumns:`repeat(${columns},minmax(0,1fr))`,gap:`${design.gap??20}px`,alignItems:design.alignItems||'start'}} onDragOver={preview?(e=>e.preventDefault()):undefined} onDrop={preview?takeDrop:undefined}>
+    return <section key={id} data-section={id} className={`v2-builder-section v2-builder-${block.type} v2-builder-custom-layout`} style={{order:activePage==='home'?(d.homepageOrder?.includes(id)?d.homepageOrder.indexOf(id):100+index):index,backgroundColor:design.background||undefined,backgroundImage:gradient||undefined,paddingTop:design.paddingTop??undefined,paddingBottom:design.paddingBottom??undefined,paddingLeft:design.paddingLeft??undefined,paddingRight:design.paddingRight??undefined,display:design.display}}>
+      <div className="container v2-builder-content v2-editable-layout" style={{display:'grid',gridTemplateColumns:`repeat(${columns},minmax(0,1fr))`,gap:`${design.gap??20}px`,alignItems:design.alignItems||'start'}} onDragOver={preview&&!block.locked?(e=>e.preventDefault()):undefined} onDrop={preview&&!block.locked?takeDrop:undefined}>
         {all.length?all:<div className="v2-builder-blank" data-edit-path={preview?`builderBlocks.${id}.label`:undefined} data-edit-kind="text">{preview?'Drag elements here or click + Add Element':' '}</div>}
       </div>
     </section>
@@ -188,11 +197,13 @@ function Page() {
   const [data,setData] = useState(initialContent)
   const [loaded,setLoaded] = useState(false)
   const [slug,setSlug]=useState(routeSlug())
-  useEffect(()=>{fetch(jsonUrl,{cache:'no-store'}).then(r=>r.ok?r.json():null).then(saved=>{if(saved)setData(deepMerge(initialContent,saved))}).catch(()=>{}).finally(()=>setLoaded(true))},[])
-  useEffect(()=>{if(!previewMessaging)return;const receive=e=>{if(e.origin!==location.origin)return;if(e.data?.type==='OPTIMAX_STATE')setData(deepMerge(initialContent,e.data.data))};window.addEventListener('message',receive);window.parent.postMessage({type:'OPTIMAX_READY'},location.origin);return()=>window.removeEventListener('message',receive)},[])
+  useEffect(()=>{if(previewMessaging&&window.parent!==window){setLoaded(true);return}const controller=new AbortController();fetch(jsonUrl,{cache:'no-store',signal:controller.signal}).then(r=>r.ok?r.json():null).then(saved=>{if(saved)setData(deepMerge(initialContent,saved))}).catch(()=>{}).finally(()=>setLoaded(true));return()=>controller.abort()},[])
+  useEffect(()=>{if(!previewMessaging)return;const receive=e=>{if(e.origin!==location.origin||e.source!==window.parent)return;if(e.data?.type==='OPTIMAX_STATE')setData(deepMerge(initialContent,e.data.data))};window.addEventListener('message',receive);window.parent.postMessage({type:'OPTIMAX_READY'},location.origin);return()=>window.removeEventListener('message',receive)},[])
   useEffect(()=>{const update=()=>setSlug(routeSlug());window.addEventListener('popstate',update);return()=>window.removeEventListener('popstate',update)},[])
-  useEffect(()=>{if(!previewMessaging)return;const click=e=>{const a=e.target.closest('a[href]');if(!a)return;const url=new URL(a.href,location.href);if(url.origin!==location.origin||!url.pathname.startsWith(baseUrl))return;const next=pathSlug(url.pathname,rootUrl);if(!data.pages.some(p=>p.slug===next))return;e.preventDefault();history.pushState(null,'',`${location.pathname}?${preview?'preview':'siteview'}=1&page=${next}${url.hash}`);setSlug(next);if(url.hash)setTimeout(()=>document.getElementById(url.hash.slice(1))?.scrollIntoView(),0);else window.scrollTo(0,0)};document.addEventListener('click',click);return()=>document.removeEventListener('click',click)},[data.pages])
+  useEffect(()=>{if(!previewMessaging)return;const click=e=>{if(preview||e.defaultPrevented){if(preview&&e.target.closest('a[href]'))e.preventDefault();return}const a=e.target.closest('a[href]');if(!a)return;const url=new URL(a.href,location.href);if(url.origin!==location.origin||!url.pathname.startsWith(baseUrl))return;const next=pathSlug(url.pathname,rootUrl);if(!data.pages.some(p=>p.slug===next))return;e.preventDefault();history.pushState(null,'',`${location.pathname}?${preview?'preview':'siteview'}=1&page=${next}${url.hash}`);setSlug(next);if(url.hash)setTimeout(()=>document.getElementById(url.hash.slice(1))?.scrollIntoView(),0);else window.scrollTo(0,0)};document.addEventListener('click',click);return()=>document.removeEventListener('click',click)},[data.pages])
   const currentPage=data.pages?.find(p=>p.slug===slug)||data.pages?.[0]
+  if(edit&&import.meta.env.VITE_STUDIO_URL&&!teamMode){location.replace(import.meta.env.VITE_STUDIO_URL+'/?edit=1');return <p>Opening designer sign in…</p>}
+  if(edit&&teamMode)return <TeamGate published={data} loaded={loaded}/>
   if (edit) return <Editor published={data} loaded={loaded}/>
   return <Site d={data} activePage={currentPage?.id||'home'}/>
 }

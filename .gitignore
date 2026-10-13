@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.wrangler/
+.dev.vars
+.env.local
+work/
+*.log
+
+dist-team/
+browser-test.png
+team-test.png
