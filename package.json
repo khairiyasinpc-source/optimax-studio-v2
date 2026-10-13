@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "vite build && node scripts/create-page-routes.mjs",
+    "build": "node scripts/build.mjs",
     "preview": "vite preview --host 0.0.0.0",
     "test:logic": "node tests/logic.test.mjs && node tests/builder.test.mjs && node tests/upgrade.test.mjs && node tests/designer-core.test.mjs && node tests/regression.test.mjs && node tests/server.test.mjs && node tests/publish.test.mjs",
     "test:browser": "node tests/browser.test.mjs",

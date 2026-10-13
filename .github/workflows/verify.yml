@@ -20,7 +20,7 @@ jobs:
       - name: Browser regression on production build
         run: |
           npm run build -- --base=/optimax-studio-v2/
-          npm run preview -- --host 127.0.0.1 --port 5173 > /tmp/optimax-preview.log 2>&1 &
+          npm run preview -- --base=/optimax-studio-v2/ --host 127.0.0.1 --port 5173 > /tmp/optimax-preview.log 2>&1 &
           for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:5173/optimax-studio-v2/ >/dev/null && break || sleep 1; done
           TEST_URL=http://127.0.0.1:5173/optimax-studio-v2/ SCREENSHOT_PATH=browser-test.png npm run test:browser
       - name: Build authenticated studio and test collaboration
