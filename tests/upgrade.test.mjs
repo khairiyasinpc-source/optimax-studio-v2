@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import {initialContent,deepMerge,setPath,readPath} from '../src/siteDefaults.js'
 import {gradientBackground} from '../src/gradient.js'
 import fs from 'node:fs'
-const old=JSON.parse(fs.readFileSync(new URL('../public/site-content.json',import.meta.url),'utf8'))
+const old=JSON.parse(fs.readFileSync(new URL('./legacy-content.json',import.meta.url),'utf8'))
 const restored=deepMerge(initialContent,old)
 assert.equal(restored.hero.overlay.enabled,true,'Old V2 sites get the same gradient')
 assert.equal(restored.branding.headerLogo,'','Old V2 sites keep the text logo')

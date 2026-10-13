@@ -36,4 +36,4 @@ await page.getByRole('button',{name:'Export backup',exact:true}).click();const d
 assert.deepEqual(errors,[])
 if(process.env.SCREENSHOT_PATH){await page.getByRole('button',{name:'Close dialog',exact:true}).click();await page.screenshot({path:process.env.SCREENSHOT_PATH})}
 console.log('PASS: real Chromium selection, draft updates, full preview, reload persistence, dark mode, sections, direct upload, up/down, cross-frame drag, reorder, gradients, responsive width, resize, undo, pages, ZIP export, zero page exceptions')
-}catch(error){await page.screenshot({path:'browser-test.png'}).catch(()=>{});console.log('Browser failures:',errors);throw error}finally{await browser.close()}
+}catch(error){console.log('Final DOM:',await page.locator('.studio-v2-inspector').innerText());await page.screenshot({path:'browser-test.png'}).catch(()=>{});console.log('Browser failures:',errors);throw error}finally{await browser.close()}

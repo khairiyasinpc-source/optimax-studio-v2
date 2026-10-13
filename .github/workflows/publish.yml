@@ -1,0 +1,74 @@
+name: Publish OPTIMAX shared draft
+run-name: 'Publish OPTIMAX r${{ inputs.revision }} · ${{ inputs.job }}'
+on:
+  workflow_dispatch:
+    inputs:
+      job:
+        required: true
+        type: string
+      revision:
+        required: true
+        type: string
+      studio_url:
+        required: true
+        type: string
+      head_sha:
+        required: true
+        type: string
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: optimax-pages
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      STUDIO_URL: ${{ vars.STUDIO_URL }}
+      PUBLISH_JOB: ${{ inputs.job }}
+      PUBLISH_JOB_TOKEN: ${{ secrets.PUBLISH_JOB_TOKEN }}
+      EXPECTED_HEAD: ${{ inputs.head_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Fetch immutable draft and media
+        run: node scripts/run-publish-job.mjs
+      - run: npm run test:logic
+      - name: Build published website
+        env:
+          VITE_STUDIO_URL: ${{ vars.STUDIO_URL }}
+        run: npm run build -- --base=/optimax-studio-v2/
+      - name: Commit JSON and all media together
+        id: commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/site-content.json public/media
+          if ! git diff --cached --quiet; then git commit -m "Publish OPTIMAX shared draft ${PUBLISH_JOB}"; fi
+          git push origin HEAD:main
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Report publishing result
+        if: always()
+        env:
+          RESULT: ${{ job.status }}
+          PUBLISHED_COMMIT: ${{ steps.commit.outputs.sha }}
+        run: node scripts/complete-publish-job.mjs

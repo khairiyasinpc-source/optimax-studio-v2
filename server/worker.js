@@ -7,25 +7,30 @@ const json=(value,status=200,headers={})=>Response.json(value,{status,headers:{'
 async function body(request,limit=3*1024*1024){if(Number(request.headers.get('Content-Length'))>limit)fail(413,'Request is too large');const bytes=await request.arrayBuffer();if(bytes.byteLength>limit)fail(413,'Request is too large');try{return JSON.parse(new TextDecoder().decode(bytes))}catch{fail(400,'Invalid JSON')}}
 function cleanContent(value){if(!value?.hero||!value?.buttons||!Array.isArray(value.pages)||typeof value.builderBlocks!=='object')fail(400,'Invalid website content');const data=deepMerge(initialContent,value);data.previewAssets={};return data}
 export async function mediaBytes(env,path){const media=await env.DB.prepare('SELECT * FROM media WHERE path=? AND complete=1').bind(path).first();if(!media)fail(422,`Upload is missing or incomplete: ${path}`);const parts=[];for(let i=0;i<Math.ceil(media.size/CHUNK);i++){const chunk=await env.DB.prepare('SELECT bytes FROM chunks WHERE path=? AND idx=?').bind(path,i).first();if(!chunk)fail(422,'Media chunk is missing');parts.push(new Uint8Array(chunk.bytes))}return {blob:new Blob(parts,{type:media.mime}),media}}
-async function github(env,path,method='GET',value){if(!env.GITHUB_TOKEN)fail(503,'Publishing credential is not configured');const response=await fetch(`https://api.github.com/repos/${env.GITHUB_REPOSITORY||'khairiyasinpc-source/optimax-studio-v2'}/${path}`,{method,headers:{Authorization:`Bearer ${env.GITHUB_TOKEN}`,'User-Agent':'OPTIMAX-Studio','Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json'},body:value?JSON.stringify(value):undefined});if(!response.ok)fail(response.status===422?409:502,'GitHub rejected the request. Your shared draft is safe.');return response.json()}
-function base64(bytes){let str='';for(let i=0;i<bytes.length;i+=8192)str+=String.fromCharCode(...bytes.subarray(i,i+8192));return btoa(str)}
+async function github(env,path,method='GET',value){if(!env.GITHUB_TOKEN)fail(503,'Publishing credential is not configured');const response=await fetch(`https://api.github.com/repos/${env.GITHUB_REPOSITORY||'khairiyasinpc-source/optimax-studio-v2'}/${path}`,{method,headers:{Authorization:`Bearer ${env.GITHUB_TOKEN}`,'User-Agent':'OPTIMAX-Studio','Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json'},body:value?JSON.stringify(value):undefined});if(!response.ok)fail(response.status===422?409:502,'GitHub rejected the request. Your shared draft is safe.');return response.status===204?{}:response.json()}
 export async function publish(env,user,revision){
-  const lease=crypto.randomUUID();const lock=await env.DB.prepare('UPDATE publishing SET lease=?,expires=? WHERE id=1 AND expires<?').bind(lease,Date.now()+600000,Date.now()).run();if(!lock.meta.changes)fail(409,'Another publish is running. Try again after it finishes.')
+  if(!env.PUBLISH_JOB_TOKEN)fail(503,'Publishing job secret is not configured')
+  const lease=crypto.randomUUID();const lock=await env.DB.prepare('UPDATE publishing SET lease=?,expires=? WHERE id=1 AND expires<?').bind(lease,Date.now()+1200000,Date.now()).run();if(!lock.meta.changes)fail(409,'Another publish is running. Try again after it finishes.')
+  let dispatched=false
   try{const draft=await env.DB.prepare('SELECT * FROM drafts WHERE id=1').first();if(!draft||draft.revision!==revision)fail(409,'The shared draft changed. Reload before publishing.')
-    const last=await env.DB.prepare('SELECT commit_sha,revision FROM publishing WHERE id=1').first();if(last.revision===revision&&last.commit_sha)return {commit:last.commit_sha,revision}
-    const data=cleanContent(JSON.parse(draft.content)),branch=env.GITHUB_BRANCH||'main',head=await github(env,`git/ref/heads/${branch}`),commit=await github(env,`git/commits/${head.object.sha}`),tree=[]
-    // Each media path is immutable. Existing shared objects need no duplicate Git blob.
-    const oldTree=await github(env,`git/trees/${commit.tree.sha}?recursive=1`),existing=new Set(oldTree.tree.filter(e=>e.type==='blob').map(e=>e.path))
-    for(const asset of data.mediaAssets){if(existing.has('public/'+asset.path))continue;const {blob}=await mediaBytes(env,asset.path);const uploaded=await github(env,'git/blobs','POST',{content:base64(new Uint8Array(await blob.arrayBuffer())),encoding:'base64'});tree.push({path:'public/'+asset.path,mode:'100644',type:'blob',sha:uploaded.sha})}
-    tree.push({path:'public/site-content.json',mode:'100644',type:'blob',content:JSON.stringify(data,null,2)+'\n'})
-    const nextTree=await github(env,'git/trees','POST',{base_tree:commit.tree.sha,tree}),next=await github(env,'git/commits','POST',{message:`Publish OPTIMAX shared draft r${revision} by ${user.username}`,tree:nextTree.sha,parents:[head.object.sha]})
-    const fresh=await github(env,`git/ref/heads/${branch}`);if(fresh.object.sha!==head.object.sha)fail(409,'Repository changed during publishing. Retry to preserve the newer changes.')
-    await github(env,`git/refs/heads/${branch}`,'PATCH',{sha:next.sha,force:false})
-    await env.DB.prepare('UPDATE publishing SET commit_sha=?,revision=?,username=? WHERE id=1 AND lease=?').bind(next.sha,revision,user.username,lease).run()
-    return {commit:next.sha,revision,url:env.PUBLIC_URL||'https://khairiyasinpc-source.github.io/optimax-studio-v2/'}
-  }finally{await env.DB.prepare('UPDATE publishing SET lease=NULL,expires=0 WHERE id=1 AND lease=?').bind(lease).run()}
+    const done=await env.DB.prepare("SELECT id,commit_sha FROM publish_jobs WHERE revision=? AND conclusion='success' ORDER BY created DESC LIMIT 1").bind(revision).first();if(done)return {job:done.id,commit:done.commit_sha,revision}
+    const head=await github(env,`git/ref/heads/${env.GITHUB_BRANCH||'main'}`)
+    await env.DB.prepare('INSERT INTO publish_jobs(id,revision,content,username,head_sha,created) VALUES(?,?,?,?,?,?)').bind(lease,revision,draft.content,user.username,head.object.sha,Date.now()).run()
+    await github(env,'actions/workflows/publish.yml/dispatches','POST',{ref:env.GITHUB_BRANCH||'main',inputs:{job:lease,revision:String(revision),studio_url:env.STUDIO_URL,head_sha:head.object.sha}})
+    dispatched=true;return {job:lease,revision,state:'queued',url:env.PUBLIC_URL||'https://khairiyasinpc-source.github.io/optimax-studio-v2/'}
+  }finally{if(!dispatched)await env.DB.prepare('UPDATE publishing SET lease=NULL,expires=0 WHERE id=1 AND lease=?').bind(lease).run()}
+}
+async function jobAPI(request,env,url){
+  const token=request.headers.get('Authorization')?.replace(/^Bearer /,'')||'';if(!env.PUBLISH_JOB_TOKEN||!constantEqual(token,env.PUBLISH_JOB_TOKEN))fail(401,'Publishing job is not authorized')
+  const match=url.pathname.match(/^\/api\/publish-job\/([a-f0-9-]{36})(?:\/(.*))?$/);if(!match)fail(404,'Job route not found')
+  const job=await env.DB.prepare('SELECT * FROM publish_jobs WHERE id=?').bind(match[1]).first();if(!job||Date.now()-job.created>3600000)fail(404,'Publishing job expired')
+  if(request.method==='GET'&&!match[2])return json({revision:job.revision,data:JSON.parse(job.content),head:job.head_sha})
+  if(request.method==='GET'&&match[2]?.startsWith('media/')){const data=JSON.parse(job.content);if(!data.mediaAssets.some(a=>a.path===match[2]))fail(403,'Media is outside this publishing snapshot');const {blob}=await mediaBytes(env,match[2]);return new Response(blob,{headers:{'Content-Type':blob.type,'Cache-Control':'no-store'}})}
+  if(request.method==='POST'&&match[2]==='complete'){const input=await body(request,2048);if(!['success','failure','cancelled'].includes(input.conclusion)||input.commit&&!/^[a-f0-9]{40}$/.test(input.commit))fail(400,'Invalid job result');await env.DB.batch([env.DB.prepare("UPDATE publish_jobs SET state='completed',conclusion=?,commit_sha=? WHERE id=?").bind(input.conclusion,input.commit||null,job.id),env.DB.prepare('UPDATE publishing SET lease=NULL,expires=0,revision=?,commit_sha=? WHERE id=1 AND lease=?').bind(job.revision,input.commit||null,job.id)]);return json({ok:true})}
+  fail(404,'Job route not found')
 }
 async function api(request,env){const url=new URL(request.url),path=url.pathname,method=request.method
+  if(path.startsWith('/api/publish-job/'))return jobAPI(request,env,url)
   if(!['GET','HEAD'].includes(method)&&request.headers.get('Origin')!==url.origin)fail(403,'Request origin is not allowed')
   if(path==='/api/login'&&method==='POST'){
     const input=await body(request,2048),users=credentials(env);if(typeof input.username!=='string'||typeof input.password!=='string'||input.password.length>256)fail(401,'Incorrect username or password')
@@ -66,7 +71,7 @@ async function api(request,env){const url=new URL(request.url),path=url.pathname
     await env.DB.prepare('UPDATE media SET complete=1 WHERE path=?').bind(row.path).run();return json({ok:true})
   }
   if(path==='/api/publish'&&method==='POST'){const input=await body(request,2048);return json(await publish(env,user,input.revision))}
-  if(path==='/api/publish-status'&&method==='GET'){const last=await env.DB.prepare('SELECT commit_sha,revision FROM publishing WHERE id=1').first();if(!last?.commit_sha)return json({state:'idle'});const runs=await github(env,`actions/runs?head_sha=${last.commit_sha}&per_page=10`);const run=runs.workflow_runs.find(r=>r.path==='.github/workflows/deploy.yml');return json({commit:last.commit_sha,revision:last.revision,state:run?.status||'queued',conclusion:run?.conclusion||null,url:run?.html_url||null})}
+  if(path==='/api/publish-status'&&method==='GET'){const job=await env.DB.prepare('SELECT * FROM publish_jobs ORDER BY created DESC LIMIT 1').first();if(!job)return json({state:'idle'});if(job.state==='completed')return json({state:'completed',conclusion:job.conclusion,commit:job.commit_sha,revision:job.revision});const runs=await github(env,'actions/workflows/publish.yml/runs?event=workflow_dispatch&per_page=20');const run=runs.workflow_runs.find(r=>r.display_title?.includes(job.id));return json({job:job.id,revision:job.revision,state:run?.status||job.state,conclusion:run?.conclusion||null,url:run?.html_url||null})}
   fail(404,'API route not found')
 }
 export default {async fetch(request,env){try{const url=new URL(request.url);let response
