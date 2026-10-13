@@ -25,12 +25,27 @@ export const newSection=(type='blank',id=`section${Date.now().toString(36)}`)=>{
   const heading=()=>block('text','Heading','Your heading goes here')
   const body=()=>block('text','Description','Add your content here. Click any element to edit.')
   const button=()=>block('button','Button',{label:'Learn More',href:'#enquiry'})
-  const image=()=>block('image','Image','https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=1200&q=82')
+  const image=()=>block('image','Image','')
   const icon=()=>block('icon','Icon','Eye')
   const blocks={blank:[],hero:[heading(),body(),button()],split:[image(),heading(),body(),button()],cards:[heading(),body(),image(),block('text','Card 1 title','Personalised eye care'),block('text','Card 1 description','Discover more about our services'),image(),block('text','Card 2 title','Experienced specialists'),block('text','Card 2 description','Care you can trust'),image(),block('text','Card 3 title','Advanced technology'),block('text','Card 3 description','Modern treatment options')],cta:[heading(),body(),button()],gallery:[heading(),image(),image(),image()],faq:[heading(),body(),body()]}[type]||[]
   return {id,type,label:sectionTemplates.find(t=>t.type===type)?.label||'Section',visible:true,locked:false,blocks}
 }
-export const newBlock=(kind='text')=>({id:`b${Math.random().toString(36).slice(2,9)}`,kind,label:{text:'Text',image:'Image',icon:'Icon',button:'Button'}[kind]||'Element',value:{text:'Click to edit this text',image:'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=900&q=80',icon:'Eye',button:{label:'Learn More',href:'#enquiry'}}[kind]})
+export const newBlock=(kind='text')=>({id:`b${Math.random().toString(36).slice(2,9)}`,kind,label:{text:'Text',image:'Image',video:'Video',icon:'Icon',button:'Button',spacer:'Spacer'}[kind]||'Element',value:{text:'Double-click to edit this text',image:'',video:'',icon:'Eye',button:{label:'Learn More',href:'#enquiry'},spacer:''}[kind],style:{}})
+// Per-element presentation survives JSON exports and GitHub Pages reloads.
+// Only known CSS-safe properties are accepted; no arbitrary code or HTML is stored.
+const BLOCK_STYLE_KEYS=['width','height','paddingTop','paddingRight','paddingBottom','paddingLeft','marginTop','marginRight','marginBottom','marginLeft','background','color','borderColor','borderWidth','radius','shadow','opacity','textAlign','fontSize','fontWeight','alignSelf','gridColumn','objectFit']
+export function cleanBlockStyle(input){
+  if(!input||typeof input!=='object'||Array.isArray(input))return {}
+  const out={}
+  for(const key of BLOCK_STYLE_KEYS){const v=input[key];if(v===undefined||v===null||v==='')continue
+    if(['background','color','borderColor'].includes(key)){if(typeof v==='string'&&/^#[a-f0-9]{6}$/i.test(v))out[key]=v;continue}
+    if(['textAlign','alignSelf','objectFit'].includes(key)){if(typeof v==='string'&&['left','center','right','start','end','stretch','cover','contain'].includes(v))out[key]=v;continue}
+    if(key==='shadow'){if(typeof v==='boolean')out[key]=v;continue}
+    if(typeof v==='number'&&Number.isFinite(v))out[key]=Math.max(key==='opacity'?0:-200,Math.min(key==='opacity'?100:2000,v))
+  }
+  return out
+}
+
 export function cleanPages(pages){
   if(!Array.isArray(pages))return structuredClone(defaultPages)
   const ids=new Set(['home']),slugs=new Set([''])
@@ -48,7 +63,7 @@ export function cleanBuilders(blocks){
     if(!/^section[a-zA-Z0-9_-]+$/.test(id)||!b||typeof b!=='object')continue
     const type=sectionTemplates.some(t=>t.type===b.type)?b.type:'blank'
     result[id]={id,type,label:String(b.label||'Section').slice(0,100),visible:b.visible!==false,locked:b.locked===true,
-      blocks:Array.isArray(b.blocks)?b.blocks.slice(0,40).filter(x=>x&&['text','image','icon','button'].includes(x.kind)).map(x=>({id:String(x.id||'b').replace(/[^a-zA-Z0-9_-]/g,'').slice(0,50),kind:x.kind,label:String(x.label||x.kind).slice(0,80),value:x.kind==='button'?{label:String(x.value?.label||'Learn More').slice(0,160),href:String(x.value?.href||'#').slice(0,250)}:String(x.value||'').slice(0,300000)})):[]}
+      blocks:Array.isArray(b.blocks)?b.blocks.slice(0,40).filter(x=>x&&['text','image','video','icon','button','spacer'].includes(x.kind)).map(x=>({id:String(x.id||'b').replace(/[^a-zA-Z0-9_-]/g,'').slice(0,50),kind:x.kind,label:String(x.label||x.kind).slice(0,80),value:x.kind==='button'?{label:String(x.value?.label||'Learn More').slice(0,160),href:String(x.value?.href||'#').slice(0,250)}:String(x.value||'').slice(0,300000),style:cleanBlockStyle(x.style)})):[]}
   }
   return result
 }

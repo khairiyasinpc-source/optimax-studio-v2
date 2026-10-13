@@ -66,3 +66,19 @@
 .studio-v2[data-studio-theme="dark"] .studio-v2-dialog{background:#1a2837;color:#e4edf8}
 .studio-v2[data-studio-theme="dark"] .studio-v2-dialog p,.studio-v2[data-studio-theme="dark"] .studio-v2-dialog li{color:#bed1e7}
 @media(max-width:660px){.studio-v2-pagesbar{padding:7px}.studio-v2-fullhead{padding:0 9px}.studio-v2-fullhead span{font-size:10px}}
+
+/* Extra creation tools in the existing left sidebar, no editor layout redesign. */
+.v2-palette{padding:7px 10px;border-bottom:1px solid #e3ebf5}
+.v2-palette-toggle{display:flex;justify-content:space-between;gap:8px;align-items:center;width:100%;border-radius:8px;background:#f3f7fc;color:#245377;font-size:12px;font-weight:700;padding:10px 12px}
+.v2-palette-toggle span{margin-left:auto;font-size:16px;color:#2d78c1}
+.v2-palette-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}
+.v2-palette-grid button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;background:#fff;border:1px solid #dee8f4;border-radius:8px;color:#325d82;padding:12px 4px;font-size:10px;cursor:grab}
+.v2-palette-grid button:hover{border-color:#4a89cd;background:#eef6fe}
+.v2-palette-tip{display:block;font-size:10px;color:#7990a8;line-height:1.5;margin:2px 3px 9px}
+.v2-edit-bar{padding:11px;border:1px solid #dae8f5;border-radius:8px;background:#f5f9fe;display:flex;flex-direction:column;gap:4px;font-size:11px;margin-bottom:10px}
+.v2-edit-bar span{color:#6686a0}
+.v2-quick-actions{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:16px}
+.v2-quick-actions button{display:flex;align-items:center;justify-content:center;gap:3px;flex:1;border:1px solid #dae5ee;background:#fff;padding:9px 5px;border-radius:7px;color:#2a5b84;font-size:10px}
+.v2-quick-actions button:disabled{opacity:.35}
+.studio-v2[data-studio-theme="dark"] .v2-palette,.studio-v2[data-studio-theme="dark"] .v2-edit-bar{background:#1b3045;border-color:#36536c}
+.studio-v2[data-studio-theme="dark"] .v2-palette-toggle,.studio-v2[data-studio-theme="dark"] .v2-palette-grid button,.studio-v2[data-studio-theme="dark"] .v2-quick-actions button{background:#25425f;color:#d7eaff;border-color:#3e5f7a}

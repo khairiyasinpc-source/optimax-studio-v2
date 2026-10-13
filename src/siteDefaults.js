@@ -82,6 +82,7 @@ export const initialContent = {
   library: [],
   pages: structuredClone(defaultPages),
   builderBlocks: {},
+  homepageOrder: [],
   gradients: {sections:{},elements:{}},
   navigation: structuredClone(defaultNavigation),
   mediaAssets: [],
@@ -95,7 +96,8 @@ export function deepMerge(base, saved) {
   for (const key of Object.keys(saved)) {
     if (!Object.hasOwn(base,key) || key==='__proto__'||key==='constructor'||key==='prototype') continue
     const value=saved[key],template=base[key]
-    if(key==='pages')result[key]=cleanPages(value)
+    if(key==='homepageOrder' && Array.isArray(value))result[key]=Array.from(new Set(value.filter(id=>typeof id==='string'&&/^[a-zA-Z0-9_-]+$/.test(id)))).slice(0,300)
+    else if(key==='pages')result[key]=cleanPages(value)
     else if(key==='builderBlocks')result[key]=cleanBuilders(value)
     else if(key==='gradients')result[key]=cleanGradients(value)
     else if(key==='navigation' && Array.isArray(value))result[key]=value.slice(0,25).filter(v=>v&&typeof v.label==='string'&&typeof v.href==='string').map(v=>({label:v.label.slice(0,90),href:v.href.slice(0,250)}))
@@ -108,7 +110,7 @@ export function deepMerge(base, saved) {
     } else if(key==='library' && Array.isArray(value)) {
       result[key]=value.filter(v=>v&&typeof v.id==='string'&&typeof v.url==='string'&&typeof v.name==='string').slice(0,80).map(v=>({id:v.id,name:v.name.slice(0,120),url:v.url}))
     } else if ((key==='elementStyles'||key==='mediaSettings'||key==='sectionStyles') && value && typeof value==='object' && !Array.isArray(value)) {
-      const permitted=key==='elementStyles'?['fontSize','fontWeight','color','textAlign','lineHeight','letterSpacing','fontFamily','mobileFontSize','tabletFontSize']:key==='mediaSettings'?['positionX','positionY','fit','height','mobileSrc','poster','mobilePositionX','mobilePositionY','videoLoop','showControls']:['background','paddingTop','paddingBottom']
+      const permitted=key==='elementStyles'?['fontSize','fontWeight','color','textAlign','lineHeight','letterSpacing','fontFamily','mobileFontSize','tabletFontSize','paddingTop','paddingRight','paddingBottom','paddingLeft','marginTop','marginRight','marginBottom','marginLeft','background','borderRadius','borderColor','borderWidth','width','height','opacity']:key==='mediaSettings'?['positionX','positionY','fit','height','mobileSrc','poster','mobilePositionX','mobilePositionY','videoLoop','showControls']:['background','paddingTop','paddingBottom','paddingLeft','paddingRight','gap','columns','alignItems']
       const map=Object.create(null)
       for (const [path,attrs] of Object.entries(value)) {
         if (!/^[a-zA-Z0-9.]+$/.test(path)||!attrs||typeof attrs!=='object') continue
@@ -140,7 +142,7 @@ export function setPath(obj,path,value) {
   if(!parts.every(k=>/^[a-zA-Z0-9_-]+$/.test(k))||parts.some(k=>['__proto__','constructor','prototype'].includes(k)))return next
   if(keyedMaps.includes(parts[0])&&parts.length>=3){
     const key=parts.slice(1,-1).join('.'),attribute=parts.at(-1)
-    const allowed=parts[0]==='elementStyles'?['fontSize','fontWeight','color','textAlign','lineHeight','letterSpacing','fontFamily','mobileFontSize','tabletFontSize']:parts[0]==='mediaSettings'?['positionX','positionY','fit','height','mobileSrc','poster','mobilePositionX','mobilePositionY','videoLoop','showControls']:['background','paddingTop','paddingBottom']
+    const allowed=parts[0]==='elementStyles'?['fontSize','fontWeight','color','textAlign','lineHeight','letterSpacing','fontFamily','mobileFontSize','tabletFontSize','paddingTop','paddingRight','paddingBottom','paddingLeft','marginTop','marginRight','marginBottom','marginLeft','background','borderRadius','borderColor','borderWidth','width','height','opacity']:parts[0]==='mediaSettings'?['positionX','positionY','fit','height','mobileSrc','poster','mobilePositionX','mobilePositionY','videoLoop','showControls']:['background','paddingTop','paddingBottom','paddingLeft','paddingRight','gap','columns','alignItems']
     if(!allowed.includes(attribute))return next
     next[parts[0]]??={};next[parts[0]][key]??={};next[parts[0]][key][attribute]=value
     return next
