@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "vite build",
+    "build": "vite build && node scripts/create-page-routes.mjs",
     "preview": "vite preview --host 0.0.0.0",
-    "test:logic": "node tests/logic.test.mjs"
+    "test:logic": "node tests/logic.test.mjs && node tests/builder.test.mjs && node tests/upgrade.test.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

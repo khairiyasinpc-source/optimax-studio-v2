@@ -31,3 +31,38 @@
 .studio-v2-icon-grid button{height:38px;border:1px solid #dde7f2;background:#fff;border-radius:7px;display:grid;place-items:center;color:#285c89}
 .studio-v2-icon-grid button.active{background:#dfecfd;border:2px solid #317ad0}
 .studio-v2-icon-grid button:hover{border-color:#317ad0}
+
+/* V2 additive controls (unchanged three-column editor layout) */
+.studio-v2-pagesbar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;gap:5px;border-bottom:1px solid #e5ebf3}
+.studio-v2-pagesbar button{display:flex;align-items:center;gap:6px;border:0;background:#f4f8fc;color:#22486b;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:700}
+.studio-v2-pagesmenu{padding:7px 10px;background:#f7f9fd;border-bottom:1px solid #e0e9f2;max-height:235px;overflow:auto}
+.studio-v2-pagesmenu>button{display:flex;align-items:center;justify-content:space-between;width:100%;background:transparent;text-align:left;color:#42617e;border-radius:7px;border:0;padding:9px;font-size:12px;font-weight:600}
+.studio-v2-pagesmenu>button.active{background:#e2edfc;color:#235b9d}
+.studio-v2-pagesmenu small{font-size:9px;opacity:.7;margin-left:10px}
+.studio-v2-pageactions{display:flex;gap:8px;margin:8px 0}
+.studio-v2-pageactions button{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid #dce6f2;border-radius:7px;background:white;color:#58718b;font-size:11px;padding:7px}
+.studio-v2-addsection{border-top:1px solid #e1eaf4;margin:13px 6px;padding:12px 6px}
+.studio-v2-addsection>button{display:flex;align-items:center;justify-content:center;gap:8px;background:#e4effb;color:#16558f;width:100%;padding:11px 8px;border:1px solid #c6dbee;border-radius:9px;font-size:12px;font-weight:750}
+.studio-v2-template-options{display:flex;flex-direction:column;gap:4px;margin-top:7px}
+.studio-v2-template-options button{background:#fff;border:1px solid #e3eaf2;border-radius:7px;padding:9px;display:flex;align-items:center;gap:8px;color:#4b6681;font-size:11px;text-align:left}
+.studio-v2-template-options button:hover{background:#eaf4ff}
+.studio-v2-addoptions{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:8px}
+.studio-v2-addoptions button{background:#edf4fa;color:#245c93;font-size:11px;border-radius:6px;border:1px solid #d9e6f3;padding:8px}
+.studio-v2-fullpreview{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;background:white}
+.studio-v2-fullpreview iframe{border:0;flex:1;width:100%;background:white}
+.studio-v2-fullhead{height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;background:#081f3b;color:#fff;gap:8px}
+.studio-v2-fullhead span{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700}
+.studio-v2-fullhead button{background:#244968;color:white;border:1px solid #476987;display:flex;align-items:center;gap:7px;border-radius:8px;padding:8px 12px;font-size:12px}
+.studio-v2-photo video,.studio-v2-asset video{width:100%;max-height:160px;object-fit:cover}
+.studio-v2-navfield{padding:10px;background:#f5f8fc;border:1px solid #e6edf5;border-radius:8px;margin:8px 0}
+.studio-v2-navfield button{background:none;color:#a64d55;font-size:11px;display:flex;align-items:center;gap:5px;margin-top:5px}
+/* Theme changes editor chrome only, never the public website iframe. */
+.studio-v2[data-studio-theme="dark"]{background:#101925;color:#d9e6f3}
+.studio-v2[data-studio-theme="dark"] .studio-v2-top,.studio-v2[data-studio-theme="dark"] .studio-v2-sidebar,.studio-v2[data-studio-theme="dark"] .studio-v2-inspector,.studio-v2[data-studio-theme="dark"] .studio-v2-canvas,.studio-v2[data-studio-theme="dark"] .studio-v2-canvasbar,.studio-v2[data-studio-theme="dark"] .studio-v2-sidehead,.studio-v2[data-studio-theme="dark"] .studio-v2-inspecttabs,.studio-v2[data-studio-theme="dark"] .studio-v2-inspectbottom{background:#182432!important;color:#e2ecf8!important;border-color:#314457!important}
+.studio-v2[data-studio-theme="dark"] .studio-v2-stage,.studio-v2[data-studio-theme="dark"] .studio-v2-layerlist{background:#111c2a!important}
+.studio-v2[data-studio-theme="dark"] .studio-v2-field,.studio-v2[data-studio-theme="dark"] .studio-v2-field>span,.studio-v2[data-studio-theme="dark"] .studio-v2-paneltitle,.studio-v2[data-studio-theme="dark"] .studio-v2-layer,.studio-v2[data-studio-theme="dark"] .studio-v2-sectionhead,.studio-v2[data-studio-theme="dark"] .studio-v2-range,.studio-v2[data-studio-theme="dark"] .studio-v2-muted,.studio-v2[data-studio-theme="dark"] h3{color:#d0e1f1!important}
+.studio-v2[data-studio-theme="dark"] .studio-v2-field input,.studio-v2[data-studio-theme="dark"] .studio-v2-field textarea,.studio-v2[data-studio-theme="dark"] .studio-v2-field select,.studio-v2[data-studio-theme="dark"] .studio-v2-search input,.studio-v2[data-studio-theme="dark"] .studio-v2-gradientstop,.studio-v2[data-studio-theme="dark"] .studio-v2-navfield,.studio-v2[data-studio-theme="dark"] .studio-v2-pagesmenu,.studio-v2[data-studio-theme="dark"] .studio-v2-pagesbar,.studio-v2[data-studio-theme="dark"] .studio-v2-icon-grid button{background:#223348!important;color:#e2eaf6!important;border-color:#354d67!important}
+.studio-v2[data-studio-theme="dark"] .studio-v2-pagesbar button,.studio-v2[data-studio-theme="dark"] .studio-v2-template-options button,.studio-v2[data-studio-theme="dark"] .studio-v2-addsection button{background:#25425f;color:#d8eaff;border-color:#355b7c}
+.studio-v2[data-studio-theme="dark"] .studio-v2-dialog{background:#1a2837;color:#e4edf8}
+.studio-v2[data-studio-theme="dark"] .studio-v2-dialog p,.studio-v2[data-studio-theme="dark"] .studio-v2-dialog li{color:#bed1e7}
+@media(max-width:660px){.studio-v2-pagesbar{padding:7px}.studio-v2-fullhead{padding:0 9px}.studio-v2-fullhead span{font-size:10px}}

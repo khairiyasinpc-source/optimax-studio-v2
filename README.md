@@ -77,3 +77,16 @@ Building the React website requires installing dependencies. The included logic 
 ## Final handoff to IT (later)
 
 When the design is approved, deliver source code, the approved `public/site-content.json`, locally hosted/exported images and videos, and tested built assets (`dist/`) alongside a note on URL base, page links, forms, and external services. **The current source ZIP does not yet contain every image/video locally**; images are currently also loaded from external Unsplash URLs and data URLs. Handoff packaging is a future phase.
+
+
+## Builder upgrade (design features — not team login)
+
+This updated build adds Dark/Light editor mode, full-page draft preview, universal gradients, a page/section builder, video/GIF uploads with local browser IndexedDB and a ZIP publish package. Original V2 layout and published `public/site-content.json` are preserved.
+
+**Status:** React production bundle and browser interactions must pass a green GitHub Actions run plus hands-on browser tests before this upgrade is considered verified. Designer uploads are browser-local; team login, shared drafts and 1-click Publish are **not implemented yet**. Do not invite team members to collaborate yet.
+
+**Page publishing:** choose Export for GitHub → Publish ZIP. Extract the ZIP and place `site-content.json` and any `media/*` files inside this repo's `public/` folder. GitHub Actions will build extra static page routes when the JSON lists the new pages.
+
+**Size guidance (editor guardrails, not platform quotas):** image max 2 MB, SVG max 500 KB, GIF max 5 MB, MP4/WebM max 20 MB. Prefer images under 500 KB, GIFs under 1 MB and videos under 5 MB. Browser-local assets MUST be exported and saved before switching browsers/devices or clearing browser data.
+
+**Before editing:** back up the current repo and the `site-content.json` draft. Test UI, upload, previews and public page links on the staging site. Don't store patient information here.

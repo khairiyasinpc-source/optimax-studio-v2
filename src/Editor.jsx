@@ -1,14 +1,29 @@
 import React, {useEffect,useMemo,useRef,useState} from 'react'
-import {ArrowDown,ArrowUp,Check,ChevronDown,ChevronRight,Copy,Download,Eye,EyeOff,ExternalLink,FileJson,GripVertical,Image as ImageIcon,Info,Layers,LayoutGrid,Lock,LockOpen,Monitor,MousePointer2,Palette,Plus,Redo2,RotateCcw,Save,Settings2,Smartphone,Tablet,Trash2,Type,Undo2,Upload,X} from 'lucide-react'
+import {ArrowDown,ArrowUp,Check,ChevronDown,ChevronRight,Copy,Download,Eye,EyeOff,ExternalLink,FileJson,GripVertical,Image as ImageIcon,Info,Layers,LayoutGrid,Lock,LockOpen,Monitor,MousePointer2,Palette,Plus,Redo2,RotateCcw,Save,Settings2,Smartphone,Tablet,Trash2,Type,Undo2,Upload,X,Sun,Moon,Maximize2,FilePlus2,Film,FolderOpen,PlusCircle,Link2} from 'lucide-react'
 import {initialContent,deepMerge,readPath,setPath} from './siteDefaults'
 import {iconNames,IconVisual} from './iconCatalog'
 import {gradientBackground} from './gradient'
+import {sectionTemplates,newSection,newBlock,validSlug,gradientPreset,siteHref} from './builder'
+import {saveBlob,loadBlob,deleteBlob,kindFor,supportedFile,assetPath,makeZip,downloadBlob} from './mediaStore'
 
 const DRAFT_KEY=`optimax-studio-v2-draft:${import.meta.env.BASE_URL||'./'}`
 const OLD_KEY=`optimax-studio-old-draft:${import.meta.env.BASE_URL||'./'}`
 const MAX_HISTORY=55
-const repo=import.meta.env.VITE_GITHUB_REPOSITORY?`https://github.com/${import.meta.env.VITE_GITHUB_REPOSITORY}/tree/main/public`:''
+const MB=1024*1024
+// Designer-friendly limits. These are our own upload guardrails, NOT provider quotas.
+function mediaRule(file){
+  const kind=kindFor(file.name)
+  if(kind==='video')return {recommended:5*MB,max:20*MB,label:'MP4/WebM video'}
+  if(kind==='gif')return {recommended:MB,max:5*MB,label:'Animated GIF'}
+  if(kind==='icon')return {recommended:100*1024,max:500*1024,label:'SVG icon'}
+  return {recommended:/hero/i.test(file.name)?500*1024:300*1024,max:2*MB,label:'Image'}
+}
+const niceSize=size=>size>=MB?`${(size/MB).toFixed(1)} MB`:`${Math.ceil(size/1024)} KB`
+const repo=import.meta.env.VITE_GITHUB_REPOSITORY?`https://github.com/${import.meta.env.VITE_GITHUB_REPOSITORY}/tree/main/public`:'https://github.com/khairiyasinpc-source/optimax-studio-v2/tree/main/public'
 const getSection=path=>{
+  if(path.startsWith('builderBlocks.'))return path.split('.')[1]
+  if(path.startsWith('gradients.sections.'))return path.split('.')[2]
+  if(path.startsWith('gradients.elements.'))return getSection(path.slice('gradients.elements.'.length))
   if(path.startsWith('branding.') || ['icons.headerSearch','icons.headerMenu','icons.buttonArrow','icons.cardArrow','icons.submitArrow'].includes(path) || path.startsWith('icons.social.'))return 'global'
   if(path.startsWith('icons.features.'))return 'features'
   if(path.startsWith('icons.benefits.'))return 'about'
@@ -20,15 +35,16 @@ const getSection=path=>{
   return path.split('.')[0]
 }
 function editableFields(d,section){
+  if(d.builderBlocks?.[section])return [{label:'Section name',path:`builderBlocks.${section}.label`,kind:'text'},...d.builderBlocks[section].blocks.map((b,i)=>({label:`${b.label} · ${b.kind}`,path:`builderBlocks.${section}.blocks.${i}.value`,kind:b.kind}))]
   const field=(label,path,kind='text')=>({label,path,kind})
   if(section==='hero')return [field('Eyebrow','hero.eyebrow'),field('Headline','hero.title'),field('Description','hero.body'),field('Hero image','hero.image','image'),field('Hero gradient','hero.overlay','gradient'),field('Primary button','buttons.heroBook','button'),field('Secondary button','buttons.heroExplore','button')]
   if(section==='features')return d.features.flatMap((f,i)=>[field(`Point ${i+1} • Icon`,`icons.features.${i}`,'icon'),field(`Point ${i+1} • Title`,`features.${i}.title`),field(`Point ${i+1} • Detail`,`features.${i}.detail`)])
-  if(section==='treatments')return [field('Eyebrow','treatmentSection.eyebrow'),field('Heading','treatmentSection.title'),field('Description','treatmentSection.body'),field('View button','buttons.treatmentView','button'),...d.treatments.flatMap((c,i)=>[field(`Card ${i+1} • Photo`,`treatments.${i}.image`,'image'),field(`Card ${i+1} • Title`,`treatments.${i}.title`),field(`Card ${i+1} • Description`,`treatments.${i}.desc`)])]
+  if(section==='treatments')return [field('Eyebrow','treatmentSection.eyebrow'),field('Heading','treatmentSection.title'),field('Description','treatmentSection.body'),field('View button','buttons.treatmentView','button'),...d.treatments.flatMap((c,i)=>[field(`Card ${i+1} • Photo`,`treatments.${i}.image`,'image'),field(`Card ${i+1} • Title`,`treatments.${i}.title`),field(`Card ${i+1} • Description`,`treatments.${i}.desc`),field(`Card ${i+1} • Background gradient`,`gradients.elements.treatments.${i}`,'gradient')])]
   if(section==='about')return [field('Eyebrow','about.eyebrow'),field('Heading','about.title'),field('Description','about.body'),field('Photo','about.image','image'),...['Advanced Technology','Experienced Specialists','Personalised Care','Comprehensive Solutions'].map((name,i)=>field(`${name} icon`,`icons.benefits.${i}`,'icon'))]
-  if(section==='solutions')return [field('Heading','solutions.title'),field('View button','buttons.solutionsView','button'),...d.solutions.cards.flatMap((c,i)=>[field(`Card ${i+1} • Photo`,`solutions.cards.${i}.image`,'image'),field(`Card ${i+1} • Title`,`solutions.cards.${i}.title`),field(`Card ${i+1} • Description`,`solutions.cards.${i}.desc`)])]
+  if(section==='solutions')return [field('Heading','solutions.title'),field('View button','buttons.solutionsView','button'),...d.solutions.cards.flatMap((c,i)=>[field(`Card ${i+1} • Photo`,`solutions.cards.${i}.image`,'image'),field(`Card ${i+1} • Title`,`solutions.cards.${i}.title`),field(`Card ${i+1} • Description`,`solutions.cards.${i}.desc`),field(`Card ${i+1} • Background gradient`,`gradients.elements.solutions.cards.${i}`,'gradient')])]
   if(section==='appointment')return [field('Heading','appointment.title'),field('Description','appointment.body'),field('Background','appointment.image','image'),field('CTA button','buttons.appointmentBook','button')]
   if(section==='partners')return [field('Eyebrow','partners.eyebrow'),...d.partners.names.map((_,i)=>field(`Partner ${i+1}`,`partners.names.${i}`))]
-  if(section==='news')return [field('Heading','news.title'),field('View button','buttons.newsView','button'),...d.news.cards.flatMap((c,i)=>[field(`Card ${i+1} • Photo`,`news.cards.${i}.image`,'image'),field(`Card ${i+1} • Title`,`news.cards.${i}.title`),field(`Card ${i+1} • Description`,`news.cards.${i}.desc`)])]
+  if(section==='news')return [field('Heading','news.title'),field('View button','buttons.newsView','button'),...d.news.cards.flatMap((c,i)=>[field(`Card ${i+1} • Photo`,`news.cards.${i}.image`,'image'),field(`Card ${i+1} • Title`,`news.cards.${i}.title`),field(`Card ${i+1} • Description`,`news.cards.${i}.desc`),field(`Card ${i+1} • Background gradient`,`gradients.elements.news.cards.${i}`,'gradient')])]
   if(section==='enquiry')return [field('Eyebrow','enquiry.eyebrow'),field('Heading','enquiry.title'),field('Description','enquiry.body')]
   return []
 }
@@ -66,21 +82,28 @@ function useEditorHistory(published,loaded){
 export default function Editor({published,loaded}){
   const {timeline,commit,undo,redo,replace,reset}=useEditorHistory(published,loaded),data=timeline.present
   const [selection,setSelection]=useState({path:'hero.title',kind:'text'}),[tab,setTab]=useState('properties'),[viewport,setViewport]=useState('desktop'),[expanded,setExpanded]=useState(['hero']),[showPublish,setShowPublish]=useState(false),[isPreview,setIsPreview]=useState(false),[showSidebar,setShowSidebar]=useState(false),[mobilePanel,setMobilePanel]=useState(false),[status,setStatus]=useState('Ready'),[search,setSearch]=useState('')
-  const iframe=useRef(null),assetUploadRef=useRef(null),photoRef=useRef(null),iconRef=useRef(null),importRef=useRef(null),draggedSection=useRef(null)
+  const [styleClipboard,setStyleClipboard]=useState(null)
+  const [pageId,setPageId]=useState('home'),[pagesOpen,setPagesOpen]=useState(false),[sectionMenu,setSectionMenu]=useState(false),[addElementMenu,setAddElementMenu]=useState(''),[editorTheme,setEditorTheme]=useState(()=>localStorage.getItem('optimax-v2-editor-theme')==='dark'?'dark':'light'),[fullPreview,setFullPreview]=useState(false),[assetUrls,setAssetUrls]=useState({})
+  const iframe=useRef(null),fullFrame=useRef(null),assetUploadRef=useRef(null),photoRef=useRef(null),iconRef=useRef(null),importRef=useRef(null),draggedSection=useRef(null)
   const selectedValue=readPath(data,selection.path)
   const lightButton=['heroExplore','treatmentView','solutionsView','appointmentBook','newsView','footerBook'].includes(selection.path.split('.').at(-1))
   const selectionSection=getSection(selection.path)
-  const locked=data.sections.find(s=>s.id===selectionSection)?.locked
+  const locked=data.sections.find(s=>s.id===selectionSection)?.locked||data.builderBlocks?.[selectionSection]?.locked
   const library=data.library||[]
+  const mediaAssets=data.mediaAssets||[]
+  const allMedia=[...library.map(a=>({...a,kind:'image',path:a.url})),...mediaAssets.map(a=>({...a,url:assetUrls[a.path]||`${location.pathname.replace(/\/[^/]*$/,'/')}${a.path}`}))]
+  const activePage=(data.pages||[]).find(p=>p.id===pageId)||data.pages?.[0]||{id:'home',title:'Homepage',slug:'',sections:[]}
+  const currentSections=pageId==='home'?[...(data.sections||[]),...(activePage.sections||[]).map(id=>data.builderBlocks?.[id]).filter(Boolean)]:activePage.sections.map(id=>data.builderBlocks?.[id]).filter(Boolean)
+  const previewPayload={...data,previewAssets:assetUrls}
   const imageMeta=data.mediaSettings?.[selection.path]||{}
   const elementMeta=data.elementStyles?.[selection.path]||{}
   const notify=(value)=>setStatus(value)
   const patch=(path,value)=>commit(d=>setPath(d,path,value))
   const patchMany=(updates)=>commit(d=>updates.reduce((acc,[path,value])=>setPath(acc,path,value),d))
   const select=(path,kind,focus=true)=>{setSelection({path,kind});setTab('properties');setMobilePanel(true);if(focus)iframe.current?.contentWindow?.postMessage({type:'OPTIMAX_FOCUS',path},location.origin)}
-  const changeSection=(id,updates)=>commit(d=>({...d,sections:d.sections.map(s=>s.id===id?{...s,...updates}:s)}))
-  const reorder=(from,to)=>{if(!from||!to||from===to)return;commit(d=>{const sections=[...d.sections];const src=sections.findIndex(s=>s.id===from),dest=sections.findIndex(s=>s.id===to);if(src<0||dest<0)return d;sections.splice(dest,0,sections.splice(src,1)[0]);return {...d,sections}})}
-  const shift=(id,amount)=>{const i=data.sections.findIndex(s=>s.id===id),j=i+amount;if(i<0||j<0||j>=data.sections.length)return;reorder(id,data.sections[j].id)}
+  const changeSection=(id,updates)=>commit(d=>d.builderBlocks?.[id]?{...d,builderBlocks:{...d.builderBlocks,[id]:{...d.builderBlocks[id],...updates}}}:{...d,sections:d.sections.map(s=>s.id===id?{...s,...updates}:s)} )
+  const reorder=(from,to)=>{if(!from||!to||from===to)return;if(data.builderBlocks?.[from]&&data.builderBlocks?.[to]){commit(d=>({...d,pages:d.pages.map(p=>p.id===pageId?{...p,sections:(()=>{const list=[...p.sections],i=list.indexOf(from),j=list.indexOf(to);if(i>=0&&j>=0)list.splice(j,0,list.splice(i,1)[0]);return list})()}:p)}));return}commit(d=>{const sections=[...d.sections];const src=sections.findIndex(s=>s.id===from),dest=sections.findIndex(s=>s.id===to);if(src<0||dest<0)return d;sections.splice(dest,0,sections.splice(src,1)[0]);return {...d,sections}})}
+  const shift=(id,amount)=>{const list=data.builderBlocks?.[id]?(activePage.sections||[]):data.sections.map(s=>s.id);const i=list.findIndex(v=>(typeof v==='string'?v:v.id)===id),j=i+amount;if(i<0||j<0||j>=list.length)return;reorder(id,typeof list[j]==='string'?list[j]:list[j].id)}
   const cardRoot=(selection.path.match(/^(treatments|solutions\.cards|news\.cards)\.\d+\./)||[])[1]
   const cardIndex=cardRoot?Number(selection.path.split('.')[cardRoot==='treatments'?1:2]):null
   const cardOperation=kind=>{if(!cardRoot)return;const source=readPath(data,cardRoot),index=cardIndex;if(!Array.isArray(source))return
@@ -96,48 +119,70 @@ export default function Editor({published,loaded}){
     const suffix=selection.path.slice((cardRoot+'.'+index+'.').length);select(`${cardRoot}.${newIndex}.${suffix}`,selection.kind,false)
   }
   const addCard=root=>{const arr=readPath(data,root);if(!Array.isArray(arr)||arr.length>=12){notify('Had 12 cards setiap section.');return}const newCard={...structuredClone(arr.at(-1)||{title:'New card',desc:'Add description',image:''}),title:'New card',desc:'Edit this description'};patch(root,[...arr,newCard]);const path=`${root}.${arr.length}.title`;select(path,'text',false)}
-  const createLibrary=async(files,assign=false)=>{try{const incoming=Array.from(files||[]).slice(0,10);if(!incoming.length)return;notify('Compressing images...');const assets=[];for(const file of incoming){assets.push({id:'media-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),name:file.name,url:await imageToDataUrl(file)})}commit(d=>{const copy=structuredClone(d);copy.library=[...copy.library,...assets].slice(-80);if(assign&&['image','logo','icon'].includes(selection.kind))return setPath(copy,selection.path,assets[0].url);return copy});notify(`${assets.length} gambar ditambah ke media library. Export JSON untuk publish.`)}catch(e){notify(e.message)}finally{if(assetUploadRef.current)assetUploadRef.current.value='';if(photoRef.current)photoRef.current.value='';if(iconRef.current)iconRef.current.value=''}}
-  const removeAsset=id=>commit(d=>({...d,library:d.library.filter(a=>a.id!==id)}))
+  const createLibrary=async(files,assign=false)=>{try{
+    const incoming=Array.from(files||[]).slice(0,10);if(!incoming.length)return
+    const addedImages=[],addedMedia=[],urls={},warnings=[];notify('Preparing media...')
+    for(const file of incoming){if(!supportedFile(file))throw Error(`Unsupported format: ${file.name}`)
+      const rule=mediaRule(file);if(file.size>rule.max)throw Error(`${file.name}: ${niceSize(file.size)} terlalu besar. Maximum ${niceSize(rule.max)}.`)
+      if(file.size>rule.recommended)warnings.push(`${file.name}: compress ke bawah ${niceSize(rule.recommended)} jika boleh`)
+      const kind=kindFor(file.name)
+      if(kind==='video'||kind==='gif'){
+        const id='m'+Date.now().toString(36)+Math.random().toString(36).slice(2,8),path=assetPath(id,file.name)
+        await saveBlob(id,file);addedMedia.push({id,path,name:file.name,kind,size:file.size});urls[path]=URL.createObjectURL(file)
+      }else{
+        const url=await imageToDataUrl(file);addedImages.push({id:'img'+Date.now()+'-'+Math.random().toString(36).slice(2,8),name:file.name,url,size:Math.ceil(url.length*0.75)})
+      }
+    }
+    setAssetUrls(prev=>({...prev,...urls}))
+    const first=(selection.kind==='icon'||selection.kind==='logo'?addedImages[0]?.url:addedMedia[0]?.path||addedImages[0]?.url)
+    commit(d=>{const next={...d,library:[...(d.library||[]),...addedImages].slice(-80),mediaAssets:[...(d.mediaAssets||[]),...addedMedia].slice(-100)}
+      return assign&&first&&['image','logo','icon'].includes(selection.kind)?setPath(next,selection.path,first):next})
+    notify(warnings.length?`${incoming.length} media ready. Tip: ${warnings[0]}`:`${incoming.length} media ready. Export ZIP untuk publish termasuk video/GIF.`)
+  }catch(e){notify('Upload gagal: '+e.message)}finally{for(const ref of [assetUploadRef,photoRef,iconRef])if(ref.current)ref.current.value=''}}
+
+  const removeAsset=id=>{const found=mediaAssets.find(a=>a.id===id);if(found){deleteBlob(id).catch(()=>{});commit(d=>({...d,mediaAssets:d.mediaAssets.filter(a=>a.id!==id)}));setAssetUrls(v=>{const next={...v};URL.revokeObjectURL(next[found.path]);delete next[found.path];return next})}else commit(d=>({...d,library:d.library.filter(a=>a.id!==id)}))}
   const importJSON=async file=>{if(!file)return;try{const parsed=JSON.parse(await file.text());if(!parsed||typeof parsed!=='object'||!parsed.hero||!parsed.buttons)throw Error('Fail bukan site-content.json.');replace(deepMerge(initialContent,parsed));notify('JSON berjaya import. Review sebelum publish.')}catch(e){notify('Import gagal: '+e.message)}finally{if(importRef.current)importRef.current.value=''}}
   const saveDraft=()=>{try{localStorage.setItem(DRAFT_KEY,JSON.stringify(data));notify('Draft berjaya disimpan pada browser ini.')}catch{notify('Storage penuh. Download JSON sekarang sebagai backup.')}}
   useEffect(()=>{try{localStorage.setItem(DRAFT_KEY,JSON.stringify(data));setStatus('Draft saved locally')}catch{setStatus('Browser storage penuh. Export JSON untuk backup.')}},[data])
-  useEffect(()=>{const receiver=e=>{if(e.origin!==location.origin||e.source!==iframe.current?.contentWindow)return;if(e.data?.type==='OPTIMAX_READY')iframe.current?.contentWindow?.postMessage({type:'OPTIMAX_STATE',data},location.origin);if(e.data?.type==='OPTIMAX_SELECT')select(e.data.path,e.data.kind,false)};window.addEventListener('message',receiver);return()=>window.removeEventListener('message',receiver)},[data])
-  useEffect(()=>{iframe.current?.contentWindow?.postMessage({type:'OPTIMAX_STATE',data},location.origin)},[data])
+  useEffect(()=>{const receiver=e=>{if(e.origin!==location.origin||e.source!==iframe.current?.contentWindow&&e.source!==fullFrame.current?.contentWindow)return;if(e.data?.type==='OPTIMAX_READY')iframe.current?.contentWindow?.postMessage({type:'OPTIMAX_STATE',data:previewPayload},location.origin);fullFrame.current?.contentWindow?.postMessage({type:'OPTIMAX_STATE',data:previewPayload},location.origin);if(e.data?.type==='OPTIMAX_SELECT')select(e.data.path,e.data.kind,false);if(e.data?.type==='OPTIMAX_TEXT_CHANGE'&&typeof e.data.value==='string')patch(e.data.path,e.data.value)};window.addEventListener('message',receiver);return()=>window.removeEventListener('message',receiver)},[data,assetUrls])
+  useEffect(()=>{iframe.current?.contentWindow?.postMessage({type:'OPTIMAX_STATE',data:previewPayload},location.origin);fullFrame.current?.contentWindow?.postMessage({type:'OPTIMAX_STATE',data:previewPayload},location.origin)},[data,assetUrls,fullPreview,pageId])
   useEffect(()=>{const keyboard=e=>{if(!(e.metaKey||e.ctrlKey)||e.key.toLowerCase()!=='z'||['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;e.preventDefault();if(e.shiftKey)redo();else undo()};window.addEventListener('keydown',keyboard);return()=>window.removeEventListener('keydown',keyboard)},[undo,redo])
   const toggleExpanded=id=>setExpanded(v=>v.includes(id)?v.filter(s=>s!==id):[...v,id])
   const settingsUpdate=(name,value)=>patch(`elementStyles.${selection.path}.${name}`,value)
   const mediaUpdate=(name,value)=>patch(`mediaSettings.${selection.path}.${name}`,value)
   const resetSelectedStyle=()=>commit(d=>{const next=structuredClone(d);delete next.elementStyles[selection.path];return next})
   const resetSelectedMedia=()=>commit(d=>{const next=structuredClone(d);delete next.mediaSettings[selection.path];return next})
-  const overlay=data.hero.overlay||initialContent.hero.overlay
-  const patchOverlay=(key,value)=>patch('hero.overlay.'+key,value)
-  const setStop=(index,key,value)=>{
-    const stops=structuredClone(overlay.stops)
-    stops[index]={...stops[index],[key]:value}
-    patchOverlay('stops',stops)
+  const gradientControls=(target='hero.overlay',title='Gradient overlay')=>{
+    const current=readPath(data,target)
+    const overlay=current?.stops?.length?current:target==='hero.overlay'?initialContent.hero.overlay:gradientPreset()
+    const patchOverlay=(key,value)=>patch(target+'.'+key,value)
+    const setStop=(index,key,value)=>{const stops=structuredClone(overlay.stops);stops[index]={...stops[index],[key]:value};patchOverlay('stops',stops)}
+    return <><div className="studio-v2-separator"/><h3>{title}</h3>
+      <label className="studio-v2-check"><input type="checkbox" checked={Boolean(overlay.enabled)} onChange={e=>patch(target,{...overlay,enabled:e.target.checked})}/> Enable gradient</label>
+      <Field label="Gradient type"><select value={overlay.type} onChange={e=>patchOverlay('type',e.target.value)}><option value="linear">Linear</option><option value="radial">Radial</option></select></Field>
+      {overlay.type==='linear'?<Range label="Angle" value={overlay.angle??90} min={0} max={360} suffix="°" onChange={v=>patchOverlay('angle',v)}/>:<><Range label="Radial centre X" value={overlay.radialX??25} min={0} max={100} suffix="%" onChange={v=>patchOverlay('radialX',v)}/><Range label="Radial centre Y" value={overlay.radialY??50} min={0} max={100} suffix="%" onChange={v=>patchOverlay('radialY',v)}/></>}
+      <div className="studio-v2-gradient-preview" style={{backgroundImage:gradientBackground(overlay)+'linear-gradient(130deg,#afcbe6,#315d8b)'}}/>
+      <h3>Colour stops</h3>
+      {overlay.stops.map((stop,i)=><div className="studio-v2-gradientstop" key={i}><div className="studio-v2-stophead"><b>Stop {i+1}</b><button type="button" disabled={overlay.stops.length<=2} onClick={()=>patchOverlay('stops',overlay.stops.filter((_,j)=>j!==i))} title="Remove stop"><Trash2 size={14}/></button></div><Color label="Colour" value={stop.color} onChange={v=>setStop(i,'color',v)}/><Range label="Position" suffix="%" value={stop.position} min={0} max={100} onChange={v=>setStop(i,'position',v)}/><Range label="Opacity" suffix="%" value={stop.opacity} min={0} max={100} onChange={v=>setStop(i,'opacity',v)}/></div>)}
+      <AccentButton secondary disabled={overlay.stops.length>=8} onClick={()=>patchOverlay('stops',[...overlay.stops,{color:'#ffffff',opacity:0,position:100}])}><Plus size={14}/> Add gradient stop</AccentButton>
+      <AccentButton secondary onClick={()=>patch(target,target==='hero.overlay'?structuredClone(initialContent.hero.overlay):gradientPreset())}><RotateCcw size={14}/> Reset gradient</AccentButton>
+    </>
   }
-  const gradientControls=()=> <>
-    <div className="studio-v2-separator"/><h3>Hero gradient overlay</h3>
-    <label className="studio-v2-check"><input type="checkbox" checked={overlay.enabled} onChange={e=>patchOverlay('enabled',e.target.checked)}/> Enable gradient</label>
-    <Field label="Gradient type"><select value={overlay.type} onChange={e=>patchOverlay('type',e.target.value)}><option value="linear">Linear</option><option value="radial">Radial</option></select></Field>
-    {overlay.type==='linear'?<Range label="Angle" value={overlay.angle??90} min={0} max={360} suffix="°" onChange={v=>patchOverlay('angle',v)}/>:<>
-      <Range label="Radial centre X" value={overlay.radialX??25} min={0} max={100} suffix="%" onChange={v=>patchOverlay('radialX',v)}/>
-      <Range label="Radial centre Y" value={overlay.radialY??50} min={0} max={100} suffix="%" onChange={v=>patchOverlay('radialY',v)}/>
-    </>}
-    <div className="studio-v2-gradient-preview" style={{backgroundImage:gradientBackground(overlay)+'linear-gradient(130deg,#afcbe6,#315d8b)'}}/>
+  const addPage=()=>{const title=window.prompt('New page name (example: Treatments)');if(!title?.trim())return;const slug=validSlug(title);if(!slug||data.pages.some(p=>p.slug===slug)){notify('Page name or URL already exists.');return}const id='page'+Date.now().toString(36);commit(d=>({...d,pages:[...d.pages,{id,title:title.trim().slice(0,100),slug,sections:[]}]}));setPageId(id);setSelection({path:`pages.${data.pages.length}.title`,kind:'text'});setPagesOpen(true);setExpanded([]);notify('Page added. Use Add Section to design.')}
+  const renamePage=()=>{if(pageId==='home')return;const title=window.prompt('Page name:',activePage.title);if(!title?.trim())return;const slug=validSlug(window.prompt('Page URL slug:',activePage.slug)||'');if(!slug){notify('Page URL cannot be empty.');return}if(data.pages.some(p=>p.id!==pageId&&p.slug===slug)){notify('This page URL already exists.');return}commit(d=>({...d,pages:d.pages.map(p=>p.id===pageId?{...p,title:title.trim().slice(0,100),slug}:p)}));notify('Page updated. Check links if the URL changed.')}
+  const duplicatePage=()=>{if(activePage.id==='home')return;const title=window.prompt('Duplicate page as:',activePage.title+' Copy');if(!title?.trim())return;const slug=validSlug(title);if(!slug||data.pages.some(p=>p.slug===slug)){notify('URL already exists.');return}const id='page'+Date.now().toString(36);const newIds=[];const copies={};for(const old of activePage.sections){const key='section'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);copies[key]={...structuredClone(data.builderBlocks[old]),id:key};newIds.push(key)}commit(d=>({...d,pages:[...d.pages,{id,title:title.trim(),slug,sections:newIds}],builderBlocks:{...d.builderBlocks,...copies}}));setPageId(id)}
+  const deletePage=()=>{if(activePage.id==='home'||!window.confirm(`Delete ${activePage.title}?`))return;const id=activePage.id;commit(d=>({...d,pages:d.pages.filter(p=>p.id!==id)}));setPageId('home')}
+  const addSection=type=>{const newItem=newSection(type);commit(d=>({...d,builderBlocks:{...d.builderBlocks,[newItem.id]:newItem},pages:d.pages.map(p=>p.id===pageId?{...p,sections:[...p.sections,newItem.id]}:p)}));setExpanded(e=>[...e,newItem.id]);setSelection({path:`builderBlocks.${newItem.id}.label`,kind:'text'});setTab('section');setSectionMenu(false);notify('Section added to '+activePage.title)}
+  const duplicateSection=id=>{const old=data.builderBlocks?.[id];if(!old)return;const item=structuredClone(old),newId='section'+Date.now().toString(36);item.id=newId;item.label+=' Copy';commit(d=>({...d,builderBlocks:{...d.builderBlocks,[newId]:item},pages:d.pages.map(p=>p.id===pageId?{...p,sections:(()=>{const ids=[...p.sections],idx=ids.indexOf(id);ids.splice(idx+1,0,newId);return ids})()}:p)}));setExpanded(v=>[...v,newId]);notify('Section duplicated.')}
+  const removeSection=id=>{if(!window.confirm('Delete this section?'))return;commit(d=>({...d,pages:d.pages.map(p=>({...p,sections:p.sections.filter(s=>s!==id)})),builderBlocks:Object.fromEntries(Object.entries(d.builderBlocks).filter(([k])=>k!==id))}));setSelection({path:'hero.title',kind:'text'})}
+  const addElement=(id,kind)=>{const el=newBlock(kind);commit(d=>({...d,builderBlocks:{...d.builderBlocks,[id]:{...d.builderBlocks[id],blocks:[...d.builderBlocks[id].blocks,el]}}}));const i=data.builderBlocks[id].blocks.length;setSelection({path:`builderBlocks.${id}.blocks.${i}.value`,kind});setTab('properties');setAddElementMenu('')}
+  const removeElement=()=>{const match=selection.path.match(/^builderBlocks\.(section[^.]+)\.blocks\.(\d+)\.value$/);if(!match)return;const [,id,index]=match;commit(d=>{const next=structuredClone(d);next.builderBlocks[id].blocks.splice(Number(index),1);return next});setSelection({path:`builderBlocks.${id}.label`,kind:'text'})}
+  const exportPackage=async()=>{try{notify('Preparing export package...');const entries=[{name:'site-content.json',data:new TextEncoder().encode(JSON.stringify({...data,previewAssets:{}},null,2)+'\n')}];for(const asset of mediaAssets){const blob=await loadBlob(asset.id);if(!blob){notify(`Missing ${asset.name} on this browser. Re-upload or import backup on the original device.`);return}entries.push({name:asset.path,data:blob})}entries.push({name:'README-UPLOAD.txt',data:new TextEncoder().encode('OPTIMAX V2\nUpload site-content.json to the repository public/ folder.\nUpload media/ files to repository public/media/ (create folder if needed).\nCommit all. GitHub Actions will build new pages and media URLs.\nKeep a backup ZIP before any changes.\n')});const zip=await makeZip(entries);downloadBlob(zip,'OPTIMAX-V2-PUBLISH-PACKAGE.zip');notify('ZIP downloaded. Upload contents to public/ and commit.')}
+    catch(e){notify('Export failed: '+e.message)}}
+  useEffect(()=>{let cancelled=false;const urls={};Promise.all(mediaAssets.map(async a=>{const blob=await loadBlob(a.id);if(blob)urls[a.path]=URL.createObjectURL(blob)})).then(()=>{if(!cancelled)setAssetUrls(urls);else Object.values(urls).forEach(URL.revokeObjectURL)}).catch(()=>{});return()=>{cancelled=true}},[mediaAssets.map(a=>a.id).join('|')])
+  useEffect(()=>{localStorage.setItem('optimax-v2-editor-theme',editorTheme)},[editorTheme])
 
-    <h3>Colour stops</h3>
-    {(overlay.stops||[]).map((stop,i)=><div className="studio-v2-gradientstop" key={i}>
-      <div className="studio-v2-stophead"><b>Stop {i+1}</b><button type="button" disabled={overlay.stops.length<=2} onClick={()=>patchOverlay('stops',overlay.stops.filter((_,j)=>j!==i))} title="Remove stop"><Trash2 size={14}/></button></div>
-      <Color label="Colour" value={stop.color} onChange={v=>setStop(i,'color',v)}/>
-      <Range label="Position" suffix="%" value={stop.position} min={0} max={100} onChange={v=>setStop(i,'position',v)}/>
-      <Range label="Opacity" suffix="%" value={stop.opacity} min={0} max={100} onChange={v=>setStop(i,'opacity',v)}/>
-    </div>)}
-    <AccentButton secondary disabled={overlay.stops.length>=8} onClick={()=>patchOverlay('stops',[...overlay.stops,{color:'#ffffff',opacity:0,position:100}])}><Plus size={14}/> Add gradient stop</AccentButton>
-    <AccentButton secondary onClick={()=>patch('hero.overlay',structuredClone(initialContent.hero.overlay))}><RotateCcw size={14}/> Restore original hero gradient</AccentButton>
-  </>
-
-  return <div className="studio-v2">
+  return <div className="studio-v2" data-studio-theme={editorTheme}>
     <header className="studio-v2-top">
       <div className="studio-v2-brand"><span className="studio-v2-mark">O</span><div><b>OPTIMAX Studio</b><small>Visual Editor V2</small></div></div>
       <div className="studio-v2-headcenter"><span className="studio-v2-indicator"/><span className="studio-v2-desktop-only">{status}</span></div>
@@ -147,6 +192,7 @@ export default function Editor({published,loaded}){
         <span className="studio-v2-divider-vertical"/>
         <ToolButton icon={Upload} title="Import JSON" onClick={()=>importRef.current?.click()}/>
         <ToolButton icon={Save} title="Save browser draft" onClick={saveDraft}/>
+        <ToolButton icon={editorTheme==='dark'?Sun:Moon} title={editorTheme==='dark'?'Light editor mode':'Dark editor mode'} onClick={()=>setEditorTheme(v=>v==='dark'?'light':'dark')}/>
         <button className="studio-v2-publish" onClick={()=>setShowPublish(true)}><Download size={16}/> <span>Export for GitHub</span></button>
         <input hidden ref={importRef} type="file" accept=".json,application/json" onChange={e=>importJSON(e.target.files?.[0])}/>
       </div>
@@ -154,9 +200,11 @@ export default function Editor({published,loaded}){
     <div className="studio-v2-layout">
       <aside className={'studio-v2-sidebar '+(showSidebar?'studio-v2-open':'')}>
         <div className="studio-v2-sidehead"><div><b>Layers</b><small>Website structure</small></div><Layers size={18}/></div>
+        <div className="studio-v2-pagesbar"><button type="button" onClick={()=>setPagesOpen(v=>!v)}><FolderOpen size={15}/> Pages <ChevronDown size={13}/></button><button type="button" title="Add new page" onClick={addPage}><FilePlus2 size={16}/></button></div>
+        {pagesOpen&&<div className="studio-v2-pagesmenu">{data.pages.map(page=><button key={page.id} className={pageId===page.id?'active':''} onClick={()=>{setPageId(page.id);setSelection({path:page.id==='home'?'hero.title':(page.sections.length?`builderBlocks.${page.sections[0]}.label`:`pages.${data.pages.indexOf(page)}.title`),kind:'text'});setMobilePanel(false);setExpanded(page.sections)}}>{page.title}<small>/{page.slug?`${page.slug}/`:''}</small></button>)}<button className="studio-v2-add" onClick={addPage}><Plus size={14}/> Add New Page</button>{pageId!=='home'&&<div className="studio-v2-pageactions"><button onClick={renamePage}><Type size={13}/> Rename</button><button onClick={duplicatePage}><Copy size={13}/> Duplicate</button><button onClick={deletePage}><Trash2 size={13}/> Delete</button></div>}</div>}
         <div className="studio-v2-search"><input placeholder="Search elements..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
         <div className="studio-v2-layerlist">
-          {data.sections.map((section,i)=>{
+          {currentSections.map((section,i)=>{
             const fields=editableFields(data,section.id).filter(item=>`${item.label} ${item.path}`.toLowerCase().includes(search.toLowerCase()))
             if(search&&!fields.length&&!section.label.toLowerCase().includes(search.toLowerCase()))return null
             const open=expanded.includes(section.id)||!!search
@@ -164,7 +212,7 @@ export default function Editor({published,loaded}){
               <div className={'studio-v2-sectionhead '+(!section.visible?'studio-v2-hidden':'')}>
                 <GripVertical size={14} className="studio-v2-grip"/><button type="button" className="studio-v2-sectiontitle" onClick={()=>toggleExpanded(section.id)}>{open?<ChevronDown size={14}/>:<ChevronRight size={14}/>} <span>{section.label}</span></button>
                 <button title="Move up" disabled={!i} onClick={()=>shift(section.id,-1)}><ArrowUp size={13}/></button>
-                <button title="Move down" disabled={i===data.sections.length-1} onClick={()=>shift(section.id,1)}><ArrowDown size={13}/></button>
+                <button title="Move down" disabled={i===currentSections.length-1} onClick={()=>shift(section.id,1)}><ArrowDown size={13}/></button>
                 <button title={section.locked?'Unlock section':'Lock section'} onClick={()=>changeSection(section.id,{locked:!section.locked})}>{section.locked?<Lock size={14}/>:<LockOpen size={14}/>}</button>
                 <button title={section.visible?'Hide section':'Show section'} onClick={()=>changeSection(section.id,{visible:!section.visible})}>{section.visible?<Eye size={14}/>:<EyeOff size={14}/>}</button>
               </div>
@@ -172,11 +220,13 @@ export default function Editor({published,loaded}){
                 {section.id==='treatments'&&<button className="studio-v2-add" onClick={()=>addCard('treatments')}><Plus size={13}/> Add treatment card</button>}
                 {section.id==='solutions'&&<button className="studio-v2-add" onClick={()=>addCard('solutions.cards')}><Plus size={13}/> Add solution card</button>}
                 {section.id==='news'&&<button className="studio-v2-add" onClick={()=>addCard('news.cards')}><Plus size={13}/> Add news card</button>}
+                {data.builderBlocks?.[section.id]&&<><button className="studio-v2-add" onClick={()=>setAddElementMenu(addElementMenu===section.id?'':section.id)}><Plus size={13}/> Add Element</button>{addElementMenu===section.id&&<div className="studio-v2-addoptions">{['text','image','icon','button'].map(kind=><button key={kind} onClick={()=>addElement(section.id,kind)}>{kind}</button>)}</div>}<button className="studio-v2-add" onClick={()=>duplicateSection(section.id)}><Copy size={13}/> Duplicate Section</button><button className="studio-v2-add" onClick={()=>removeSection(section.id)}><Trash2 size={13}/> Delete Section</button></>}
               </div>}
             </div>
           })}
+          <div className="studio-v2-addsection"><button onClick={()=>setSectionMenu(v=>!v)}><PlusCircle size={16}/> Add Section</button>{sectionMenu&&<div className="studio-v2-template-options">{sectionTemplates.map(t=><button key={t.type} onClick={()=>addSection(t.type)}><LayoutGrid size={14}/> {t.label}</button>)}</div>}</div>
           <div className="studio-v2-buttons-group"><b>Global components</b>
-            {[['branding.headerLogo','Header logo','logo'],['branding.footerLogo','Footer logo','logo'],['icons.headerSearch','Search icon','icon'],['icons.headerMenu','Mobile menu icon','icon'],['icons.buttonArrow','All button arrows','icon'],['icons.cardArrow','Card arrows','icon'],['icons.submitArrow','Submit arrow','icon'],['icons.social.facebook','Facebook icon','icon'],['icons.social.instagram','Instagram icon','icon'],['icons.social.youtube','YouTube icon','icon']].map(([path,label,kind])=><button key={path} className={'studio-v2-layer '+(selection.path===path?'studio-v2-layer-selected':'')} onClick={()=>select(path,kind)}>{controlIcon(kind)} {label}</button>)}
+            {[['branding.headerLogo','Header logo','logo'],['branding.footerLogo','Footer logo','logo'],['gradients.sections.header','Header background gradient','gradient'],['gradients.sections.footer','Footer background gradient','gradient'],['icons.headerSearch','Search icon','icon'],['icons.headerMenu','Mobile menu icon','icon'],['icons.buttonArrow','All button arrows','icon'],['icons.cardArrow','Card arrows','icon'],['icons.submitArrow','Submit arrow','icon'],['icons.social.facebook','Facebook icon','icon'],['icons.social.instagram','Instagram icon','icon'],['icons.social.youtube','YouTube icon','icon']].map(([path,label,kind])=><button key={path} className={'studio-v2-layer '+(selection.path===path?'studio-v2-layer-selected':'')} onClick={()=>select(path,kind)}>{controlIcon(kind)} {label}</button>)}
             {['headerBook','footerBook'].map(id=><button key={id} className={'studio-v2-layer '+(selection.path===`buttons.${id}`?'studio-v2-layer-selected':'')} onClick={()=>select(`buttons.${id}`,'button')}><MousePointer2 size={14}/> {id==='headerBook'?'Header button':'Footer button'}</button>)}
           </div>
         </div>
@@ -184,13 +234,14 @@ export default function Editor({published,loaded}){
       </aside>
       <main className="studio-v2-canvas">
         <div className="studio-v2-canvasbar">
-          <div className="studio-v2-canvaslabel"><button className="studio-v2-sidebar-toggle" onClick={()=>setShowSidebar(v=>!v)} title="Toggle layers"><Layers size={18}/></button><b>Homepage</b><span>/</span><span>{isPreview?'Preview mode':'Design mode'}</span></div>
+          <div className="studio-v2-canvaslabel"><button className="studio-v2-sidebar-toggle" onClick={()=>setShowSidebar(v=>!v)} title="Toggle layers"><Layers size={18}/></button><b>{activePage.title}</b><span>/{activePage.slug}</span><span>{isPreview?'Preview mode':'Design mode'}</span></div>
           <div className="studio-v2-switches">
             {[['desktop',Monitor,'Desktop'],['tablet',Tablet,'Tablet'],['mobile',Smartphone,'Mobile']].map(([id,Icon,title])=><button title={title} key={id} className={viewport===id?'active':''} onClick={()=>setViewport(id)}><Icon size={17}/><span>{title}</span></button>)}
           </div>
           <button className={'studio-v2-viewtoggle '+(isPreview?'active':'')} onClick={()=>setIsPreview(v=>!v)}><Eye size={17}/><span>{isPreview?'Editing':'Preview'}</span></button>
+          <ToolButton icon={Maximize2} title="Full Screen Website Preview" onClick={()=>setFullPreview(true)}/>
         </div>
-        <div className="studio-v2-stage"><div className={'studio-v2-frame studio-v2-'+viewport} style={{width:viewport==='desktop'?1280:viewport==='tablet'?768:390}}><iframe key={isPreview?'plain':'editable'} ref={iframe} title="OPTIMAX website preview" src={`${location.pathname}${isPreview?'?siteview=1':'?preview=1'}`}/></div></div>
+        <div className="studio-v2-stage"><div className={'studio-v2-frame studio-v2-'+viewport} style={{width:viewport==='desktop'?1280:viewport==='tablet'?768:390}}><iframe key={isPreview?'plain':'editable'} ref={iframe} title="OPTIMAX website preview" src={`${location.pathname}${isPreview?'?siteview=1':'?preview=1'}&page=${activePage.slug}`} /></div></div>
         <div className="studio-v2-canvasfoot"><MousePointer2 size={14}/> {isPreview?'Preview mode: links and forms behave normally.':'Click any editable element in the preview. Drag section headers in Layers to reorder.'}</div>
       </main>
       <aside className={'studio-v2-inspector '+(mobilePanel?'studio-v2-panelopen':'')}>
@@ -204,6 +255,7 @@ export default function Editor({published,loaded}){
                 <div className="studio-v2-separator"/><h3>Typography</h3>
                 <Field label="Font family"><select value={elementMeta.fontFamily||''} onChange={e=>settingsUpdate('fontFamily',e.target.value)}><option value="">Use website font</option><option>Manrope</option><option>DM Sans</option><option>Arial</option><option>Georgia</option><option>Times New Roman</option></select></Field>
                 <div className="studio-v2-half"><Field label="Font size (px)"><input type="number" min="8" max="160" placeholder="Auto" value={elementMeta.fontSize??''} onChange={e=>settingsUpdate('fontSize',e.target.value===''?'':Math.max(8,Math.min(160,Number(e.target.value))))}/></Field><Field label="Weight"><select value={elementMeta.fontWeight||''} onChange={e=>settingsUpdate('fontWeight',e.target.value)}><option value="">Default</option>{[300,400,500,600,700,800].map(weight=><option key={weight} value={weight}>{weight}</option>)}</select></Field></div>
+                <div className="studio-v2-half"><Field label="Mobile font (px)"><input type="number" min="8" max="120" placeholder="Auto" value={elementMeta.mobileFontSize??''} onChange={e=>settingsUpdate('mobileFontSize',e.target.value?Number(e.target.value):'')}/></Field><Field label="Tablet font (px)"><input type="number" min="8" max="140" placeholder="Auto" value={elementMeta.tabletFontSize??''} onChange={e=>settingsUpdate('tabletFontSize',e.target.value?Number(e.target.value):'')}/></Field></div>
                 <Field label="Alignment"><div className="studio-v2-segment">{['left','center','right'].map(t=><button key={t} className={(elementMeta.textAlign||'left')===t?'active':''} onClick={()=>settingsUpdate('textAlign',t)}>{t}</button>)}</div></Field>
                 <Range label="Line height" min={0.8} max={2.5} step={0.05} suffix="×" value={Number(elementMeta.lineHeight)||1.3} onChange={v=>settingsUpdate('lineHeight',v)}/>
                 <Range label="Letter spacing" min={-3} max={8} suffix="px" value={Number(elementMeta.letterSpacing)||0} onChange={v=>settingsUpdate('letterSpacing',v)}/>
@@ -212,19 +264,23 @@ export default function Editor({published,loaded}){
               </>}
               {selection.kind==='image'&&<>
                 <Field label="Image URL or public/images path"><input value={typeof selectedValue==='string'&&selectedValue.startsWith('data:')?'':selectedValue||''} onChange={e=>patch(selection.path,e.target.value)} placeholder="https://... or /images/photo.webp"/></Field>
-                <div className="studio-v2-photo">{selectedValue&&<img src={selectedValue} alt="Selected image"/>}</div>
+                <div className="studio-v2-photo">{selectedValue&&(/\.(mp4|webm)$/.test(selectedValue)?<video src={assetUrls[selectedValue]||selectedValue} muted autoPlay loop playsInline/>:<img src={assetUrls[selectedValue]||selectedValue} alt="Selected media"/>)}</div>
                 <AccentButton onClick={()=>photoRef.current?.click()}><Upload size={16}/> Upload / Replace</AccentButton>
-                <input hidden type="file" accept="image/png,image/jpeg,image/webp" ref={photoRef} onChange={e=>createLibrary(e.target.files,true)}/>
+                <input hidden type="file" accept="image/*,video/mp4,video/webm,.gif" ref={photoRef} onChange={e=>createLibrary(e.target.files,true)}/>
                 <AccentButton secondary onClick={()=>setTab('media')}><ImageIcon size={16}/> Choose from Media Library</AccentButton>
                 <div className="studio-v2-separator"/><h3>Crop and positioning</h3>
                 <Range label="Horizontal position" value={imageMeta.positionX??50} min={0} max={100} suffix="%" onChange={v=>mediaUpdate('positionX',v)}/>
                 <Range label="Vertical position" value={imageMeta.positionY??50} min={0} max={100} suffix="%" onChange={v=>mediaUpdate('positionY',v)}/>
+                <h3>Mobile focal point</h3><Range label="Mobile horizontal" value={imageMeta.mobilePositionX??imageMeta.positionX??50} min={0} max={100} suffix="%" onChange={v=>mediaUpdate('mobilePositionX',v)}/><Range label="Mobile vertical" value={imageMeta.mobilePositionY??imageMeta.positionY??50} min={0} max={100} suffix="%" onChange={v=>mediaUpdate('mobilePositionY',v)}/>
                 <Field label="Image fit"><select value={imageMeta.fit||'cover'} onChange={e=>mediaUpdate('fit',e.target.value)}><option value="cover">Cover (fill area)</option><option value="contain">Contain (show all)</option></select></Field>
                 {!['hero.image','appointment.image'].includes(selection.path)&&<Field label="Image height (px, blank = default)"><input type="number" min="80" max="800" placeholder="Default" value={imageMeta.height??''} onChange={e=>mediaUpdate('height',e.target.value?Math.max(80,Math.min(800,Number(e.target.value))):'')}/></Field>}
                 <AccentButton secondary onClick={()=>{patch(selection.path,readPath(initialContent,selection.path)||'');resetSelectedMedia()}}><RotateCcw size={15}/> Restore original image</AccentButton>
-                {selection.path==='hero.image'&&gradientControls()}
+                <div className="studio-v2-separator"/><h3>Video playback</h3><label className="studio-v2-check"><input type="checkbox" checked={imageMeta.videoLoop!==false} onChange={e=>mediaUpdate('videoLoop',e.target.checked)}/> Loop video (autoplay muted)</label><label className="studio-v2-check"><input type="checkbox" checked={imageMeta.showControls!==false} onChange={e=>mediaUpdate('showControls',e.target.checked)}/> Reveal player controls on tap</label>
+                <Field label="Video poster image (optional)"><select value={imageMeta.poster||''} onChange={e=>mediaUpdate('poster',e.target.value)}><option value="">None</option>{allMedia.filter(a=>a.kind!=='video').map(a=><option key={a.id} value={a.path}>{a.name}</option>)}</select></Field>
+                <Field label="Mobile alternative media (optional)"><select value={imageMeta.mobileSrc||''} onChange={e=>mediaUpdate('mobileSrc',e.target.value)}><option value="">Same as desktop</option>{allMedia.map(a=><option key={a.id} value={a.path}>{a.name}</option>)}</select></Field>
+                {gradientControls(selection.path==='hero.image'?'hero.overlay':`gradients.elements.${selection.path}`,'Media gradient overlay')}
               </>}
-              {selection.kind==='gradient'&&gradientControls()}
+              {selection.kind==='gradient'&&gradientControls(selection.path,selection.path==='hero.overlay'?'Hero gradient overlay':'Universal gradient')}
               {selection.kind==='logo'&&<>
                 <p className="studio-v2-muted">Choose a logo for this location. Header and footer can use different versions.</p>
                 {selectedValue?<div className="studio-v2-logo-preview"><img src={selectedValue} alt="Selected OPTIMAX logo"/></div>:<div className="studio-v2-empty">Original V2 text logo is active.</div>}
@@ -248,6 +304,7 @@ export default function Editor({published,loaded}){
               {selection.kind==='button'&&<>
                 <Field label="Button label"><input value={selectedValue?.label||''} onChange={e=>patch(selection.path+'.label',e.target.value)}/></Field>
                 <Field label="Link / anchor"><input value={selectedValue?.href||''} onChange={e=>patch(selection.path+'.href',e.target.value)}/></Field>
+                <Field label="Link to page"><select value={data.pages.some(p=>('/'+p.slug+(p.slug?'/':'') )===(selectedValue?.href||''))?selectedValue.href:''} onChange={e=>{if(e.target.value)patch(selection.path+'.href',e.target.value)}}><option value="">Choose a page (optional)</option>{data.pages.map(p=><option key={p.id} value={'/'+(p.slug?p.slug+'/':'')}>{p.title}</option>)}</select></Field>
                 <div className="studio-v2-separator"/><h3>Dimensions</h3>
                 <Range label="Width" value={selectedValue?.width??data.theme.buttonWidth} min={0} max={420} step={5} onChange={v=>patch(selection.path+'.width',v||null)}/>
                 <small className="studio-v2-hint">Set width to 0 for auto.</small>
@@ -258,23 +315,27 @@ export default function Editor({published,loaded}){
                 <Color label="Button text color" value={selectedValue?.color||(lightButton?data.theme.primary:'#ffffff')} onChange={v=>patch(selection.path+'.color',v)}/>
                 <AccentButton secondary onClick={()=>patchMany([['buttons.'+selection.path.split('.').at(-1)+'.width',null],[selection.path+'.height',null],[selection.path+'.radius',null],[selection.path+'.fontSize',null],[selection.path+'.bg',''],[selection.path+'.color','']])}><RotateCcw size={15}/> Reset to global button style</AccentButton>
               </>}
+              {['text','button','icon'].includes(selection.kind)&&gradientControls(`gradients.elements.${selection.path}`,selection.kind==='text'?'Text gradient':selection.kind==='button'?'Button gradient':'Icon gradient')}
+              <div className="studio-v2-separator"/><h3>Copy / Paste Style</h3><div className="studio-v2-half"><AccentButton secondary onClick={()=>{setStyleClipboard({kind:selection.kind,element:structuredClone(data.elementStyles?.[selection.path]||{}),media:structuredClone(data.mediaSettings?.[selection.path]||{}),gradient:structuredClone(readPath(data,`gradients.elements.${selection.path}`)||gradientPreset())});notify('Style copied')}}><Copy size={14}/> Copy</AccentButton><AccentButton secondary disabled={!styleClipboard||selection.kind!==styleClipboard.kind} onClick={()=>{patchMany([[`elementStyles.${selection.path}.color`,styleClipboard.element.color||''],[`elementStyles.${selection.path}.fontSize`,styleClipboard.element.fontSize||''],[`mediaSettings.${selection.path}.positionX`,styleClipboard.media.positionX??50],[`mediaSettings.${selection.path}.positionY`,styleClipboard.media.positionY??50],[`gradients.elements.${selection.path}`,styleClipboard.gradient]]);notify('Style pasted')}}><Copy size={14}/> Paste</AccentButton></div>
+              {selection.path.startsWith('builderBlocks.')&&selection.path.includes('.blocks.')&&<AccentButton secondary onClick={removeElement}><Trash2 size={14}/> Delete selected element</AccentButton>}
               {cardRoot&&<><div className="studio-v2-separator"/><h3>Card actions</h3><div className="studio-v2-cardactions"><ToolButton icon={ArrowUp} title="Move card up" disabled={cardIndex===0} onClick={()=>cardOperation('up')}/><ToolButton icon={ArrowDown} title="Move card down" disabled={cardIndex===readPath(data,cardRoot).length-1} onClick={()=>cardOperation('down')}/><ToolButton icon={Copy} title="Duplicate card" onClick={()=>cardOperation('duplicate')}/><ToolButton icon={Trash2} title="Delete card" onClick={()=>cardOperation('delete')}/></div></>}
             </>}
           </>}
-          {tab==='media'&&<><div className="studio-v2-paneltitle"><span><ImageIcon size={17}/></span><div><b>Media Library</b><small>{library.length} images · local draft</small></div></div><p className="studio-v2-muted">Upload photos, logos or icons, then select an image, logo or icon element in Layers. Your exported JSON includes these assets.</p>
-            <AccentButton onClick={()=>assetUploadRef.current?.click()}><Plus size={15}/> Add images</AccentButton><input hidden type="file" accept=".svg,image/svg+xml,image/png,image/jpeg,image/webp" multiple ref={assetUploadRef} onChange={e=>createLibrary(e.target.files,false)}/>
-            <div className="studio-v2-gallery">{library.map(item=><div className="studio-v2-asset" key={item.id}><img src={item.url} alt={item.name}/><div><small title={item.name}>{item.name}</small><button title="Remove from library" onClick={()=>removeAsset(item.id)}><Trash2 size={13}/></button></div><button disabled={!['image','logo','icon'].includes(selection.kind)||locked} onClick={()=>{patch(selection.path,item.url);setTab('properties')}}>Use this image</button></div>)}</div>
-            {!library.length&&<div className="studio-v2-empty"><ImageIcon size={27}/><p>No uploaded media yet.</p></div>}
-            <div className="studio-v2-warning"><Info size={15}/> Images are compressed and stored inside the export JSON. A lot of large photos will increase file size and browser storage usage.</div>
+          {tab==='media'&&<><div className="studio-v2-paneltitle"><span><ImageIcon size={17}/></span><div><b>Media Library</b><small>{allMedia.length} media files · local draft</small></div></div><p className="studio-v2-muted">Upload images, videos, GIF or icons. Videos/GIF are stored on this browser until you export the ZIP package.</p><div className="studio-v2-warning"><Info size={15}/> Recommended: images 100–500 KB (max 2 MB); SVG 100 KB (max 500 KB); GIF 1 MB (max 5 MB); video 3–5 MB (max 20 MB). These are editor guidelines, not free-plan quotas.</div><p className="studio-v2-muted">Current browser library: {allMedia.length} files, approx. {niceSize([...library,...mediaAssets].reduce((total,a)=>total+(a.size||0),0))}. This is not your GitHub/Cloudflare storage balance.</p>
+            <AccentButton onClick={()=>assetUploadRef.current?.click()}><Plus size={15}/> Upload media</AccentButton><input hidden type="file" accept="image/*,video/mp4,video/webm,.svg,.gif" multiple ref={assetUploadRef} onChange={e=>createLibrary(e.target.files,false)}/>
+            <div className="studio-v2-gallery">{allMedia.map(item=><div className="studio-v2-asset" key={item.id}>{item.kind==='video'?<video src={assetUrls[item.path]||item.url} muted playsInline controls/>:<img src={item.url} alt={item.name}/>} <div><small title={item.name}>{item.name}</small><button title="Remove from library" onClick={()=>removeAsset(item.id)}><Trash2 size={13}/></button></div><button disabled={!['image','logo','icon'].includes(selection.kind)||locked||((selection.kind==='logo'||selection.kind==='icon')&&['video','gif'].includes(item.kind))} onClick={()=>{if((selection.kind==='icon'||selection.kind==='logo')&&(item.kind==='video'||item.kind==='gif')){notify('Video hanya boleh digunakan pada image/background elements.');return}patch(selection.path,item.path);setTab('properties')}}>Use this media</button></div>)}</div>
+            {!allMedia.length&&<div className="studio-v2-empty"><ImageIcon size={27}/><p>No uploaded media yet.</p></div>}
+            <div className="studio-v2-warning"><Info size={15}/> Images are compressed into JSON. Videos/GIF are stored in browser IndexedDB and must be exported as ZIP before publishing.</div>
           </>}
           {tab==='section'&&<><div className="studio-v2-paneltitle"><span><LayoutGrid size={17}/></span><div><b>Section layout</b><small>{data.sections.find(v=>v.id===selectionSection)?.label||'Global element'}</small></div></div>
-            {data.sections.some(s=>s.id===selectionSection)?<>
-              <div className="studio-v2-sectioncontrols"><AccentButton secondary onClick={()=>changeSection(selectionSection,{visible:!data.sections.find(s=>s.id===selectionSection).visible})}>{data.sections.find(s=>s.id===selectionSection).visible?<EyeOff size={14}/>:<Eye size={14}/>} {data.sections.find(s=>s.id===selectionSection).visible?'Hide':'Show'} section</AccentButton><AccentButton secondary onClick={()=>changeSection(selectionSection,{locked:!locked})}>{locked?<LockOpen size={14}/>:<Lock size={14}/>} {locked?'Unlock':'Lock'} section</AccentButton></div>
+            {(data.sections.some(s=>s.id===selectionSection)||data.builderBlocks?.[selectionSection])?<>
+              <div className="studio-v2-sectioncontrols"><AccentButton secondary onClick={()=>changeSection(selectionSection,{visible:!(data.sections.find(s=>s.id===selectionSection)||data.builderBlocks[selectionSection]).visible})}>{(data.sections.find(s=>s.id===selectionSection)||data.builderBlocks[selectionSection]).visible?<EyeOff size={14}/>:<Eye size={14}/>} {(data.sections.find(s=>s.id===selectionSection)||data.builderBlocks[selectionSection]).visible?'Hide':'Show'} section</AccentButton><AccentButton secondary onClick={()=>changeSection(selectionSection,{locked:!locked})}>{locked?<LockOpen size={14}/>:<Lock size={14}/>} {locked?'Unlock':'Lock'} section</AccentButton></div>
               <div className="studio-v2-separator"/><h3>Spacing</h3>
               <Range label="Top padding" min={0} max={180} value={data.sectionStyles?.[selectionSection]?.paddingTop??data.theme.sectionPadding} onChange={v=>patch(`sectionStyles.${selectionSection}.paddingTop`,v)}/>
               <Range label="Bottom padding" min={0} max={180} value={data.sectionStyles?.[selectionSection]?.paddingBottom??data.theme.sectionPadding} onChange={v=>patch(`sectionStyles.${selectionSection}.paddingBottom`,v)}/>
               <Color label="Section background" value={data.sectionStyles?.[selectionSection]?.background||'#ffffff'} onChange={v=>patch(`sectionStyles.${selectionSection}.background`,v)}/>
-              <small className="studio-v2-hint">Background color is most visible on sections without a full background image. Section padding overrides the global desktop value.</small>
+              <small className="studio-v2-hint">Section background and gradient can be edited independently.</small>
+              {gradientControls(`gradients.sections.${selectionSection}`,'Section background gradient')}
               <AccentButton secondary onClick={()=>commit(d=>{const next=structuredClone(d);delete next.sectionStyles[selectionSection];return next})}><RotateCcw size={14}/> Reset section styling</AccentButton>
             </>:<p className="studio-v2-muted">Select a homepage section element in Layers to edit its spacing.</p>}
           </>}
@@ -299,6 +360,7 @@ export default function Editor({published,loaded}){
       </aside>
     </div>
     <button type="button" className="studio-v2-mobileproperties" onClick={()=>{setMobilePanel(v=>!v);setShowSidebar(false)}}><Settings2 size={16}/> {mobilePanel?'Hide':'Edit properties'}</button>
-    {showPublish&&<div className="studio-v2-overlay" onClick={()=>setShowPublish(false)}><div className="studio-v2-dialog" role="dialog" aria-modal="true" aria-label="Export website content" onClick={e=>e.stopPropagation()}><div className="studio-v2-dialogtop"><span><FileJson size={25}/></span><button onClick={()=>setShowPublish(false)} aria-label="Close dialog"><X size={20}/></button></div><h2>Publish changes to GitHub</h2><p>This editor saves a draft in your browser. GitHub Pages doesn't allow direct public uploads. Export your content and replace the JSON file in your repository.</p><ol><li>Download the updated <b>site-content.json</b>.</li><li>Open your GitHub repository at <code>public/</code>.</li><li>Upload the JSON file to the same folder, replacing the old file. Commit changes.</li><li>Wait until GitHub Actions shows a green check. Refresh the public website.</li></ol><AccentButton onClick={()=>{downloadJSON(data);notify('JSON downloaded. Commit it to GitHub to publish.')}}><Download size={17}/> Download site-content.json</AccentButton>{repo&&<a href={repo} target="_blank" rel="noreferrer" className="studio-v2-github">Open GitHub public folder <ExternalLink size={16}/></a>}<div className="studio-v2-warning"><Info size={15}/> Your preview is not password protected. No GitHub token is stored. Anyone with the editor URL can make local drafts, but only repository collaborators can publish.</div></div></div>}
+    {fullPreview&&<div className="studio-v2-fullpreview" role="dialog" aria-modal="true" aria-label="Full-screen website preview"><div className="studio-v2-fullhead"><span><Eye size={17}/> Website Preview · {activePage.title} · Draft only</span><button onClick={()=>setFullPreview(false)}><X size={17}/> Exit Preview</button></div><iframe ref={fullFrame} title="Full website preview" src={`${location.pathname}?siteview=1&page=${activePage.slug}`} onLoad={()=>fullFrame.current?.contentWindow?.postMessage({type:'OPTIMAX_STATE',data:previewPayload},location.origin)}/></div>}
+    {showPublish&&<div className="studio-v2-overlay" onClick={()=>setShowPublish(false)}><div className="studio-v2-dialog" role="dialog" aria-modal="true" aria-label="Export website content" onClick={e=>e.stopPropagation()}><div className="studio-v2-dialogtop"><span><FileJson size={25}/></span><button onClick={()=>setShowPublish(false)} aria-label="Close dialog"><X size={20}/></button></div><h2>Publish changes to GitHub</h2><p>This editor saves a draft in your browser. GitHub Pages doesn't allow direct public uploads. Export your website package and upload the JSON plus any media files into the public folder. New pages are built on the next GitHub Actions deployment.</p><ol><li>Download and extract the publish ZIP.</li><li>Open your GitHub repository at <code>public/</code>.</li><li>Upload <b>site-content.json</b> and any files in the <b>media/</b> folder. Commit changes.</li><li>Wait until GitHub Actions shows a green check. Refresh the public website.</li></ol><AccentButton onClick={exportPackage}><Download size={17}/> Download Publish Package (ZIP)</AccentButton><AccentButton secondary onClick={()=>{downloadJSON(data);notify('JSON downloaded. Media files still need ZIP export.')}}><FileJson size={16}/> JSON only (no media files)</AccentButton><a href={repo} target="_blank" rel="noreferrer" className="studio-v2-github">Open GitHub public folder <ExternalLink size={16}/></a><div className="studio-v2-warning"><Info size={15}/> Your preview is not password protected. No GitHub token is stored. Anyone with the editor URL can make local drafts, but only repository collaborators can publish.</div></div></div>}
   </div>
 }

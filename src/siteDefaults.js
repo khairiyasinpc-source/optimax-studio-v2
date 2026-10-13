@@ -1,3 +1,4 @@
+import {defaultPages,defaultNavigation,cleanPages,cleanBuilders,cleanGradients} from './builder.js'
 export const initialContent = {
   hero: {
     eyebrow: 'TRUSTED SINCE 1995',
@@ -78,7 +79,13 @@ export const initialContent = {
   elementStyles: {},
   mediaSettings: {},
   sectionStyles: {},
-  library: []
+  library: [],
+  pages: structuredClone(defaultPages),
+  builderBlocks: {},
+  gradients: {sections:{},elements:{}},
+  navigation: structuredClone(defaultNavigation),
+  mediaAssets: [],
+  previewAssets: {}
 }
 
 /** Preserve existing schema while allowing safely editable maps and variable-length card collections. */
@@ -88,18 +95,24 @@ export function deepMerge(base, saved) {
   for (const key of Object.keys(saved)) {
     if (!Object.hasOwn(base,key) || key==='__proto__'||key==='constructor'||key==='prototype') continue
     const value=saved[key],template=base[key]
-    if (key==='sections' && Array.isArray(value)) {
+    if(key==='pages')result[key]=cleanPages(value)
+    else if(key==='builderBlocks')result[key]=cleanBuilders(value)
+    else if(key==='gradients')result[key]=cleanGradients(value)
+    else if(key==='navigation' && Array.isArray(value))result[key]=value.slice(0,25).filter(v=>v&&typeof v.label==='string'&&typeof v.href==='string').map(v=>({label:v.label.slice(0,90),href:v.href.slice(0,250)}))
+    else if(key==='mediaAssets' && Array.isArray(value))result[key]=value.slice(0,100).filter(v=>v&&typeof v.id==='string'&&/^media\/[a-zA-Z0-9._-]+$/.test(v.path||'')).map(v=>({id:v.id.slice(0,90),name:String(v.name||'Media').slice(0,120),path:v.path,kind:['video','gif','image','icon'].includes(v.kind)?v.kind:'image'}))
+    else if(key==='previewAssets' && value && typeof value==='object')result[key]=Object.fromEntries(Object.entries(value).filter(([k,v])=>/^media\/[a-zA-Z0-9._-]+$/.test(k)&&typeof v==='string'&&v.startsWith('blob:')))
+    else if (key==='sections' && Array.isArray(value)) {
       const known=new Map(template.map(s=>[s.id,s]));const seen=new Set()
       const list=value.filter(v=>v && typeof v.id==='string' && known.has(v.id) && !seen.has(v.id) && seen.add(v.id)).map(v=>({ ...known.get(v.id), visible:v.visible!==false,locked:v.locked===true }))
       result[key]=[...list,...template.filter(s=>!seen.has(s.id))]
     } else if(key==='library' && Array.isArray(value)) {
       result[key]=value.filter(v=>v&&typeof v.id==='string'&&typeof v.url==='string'&&typeof v.name==='string').slice(0,80).map(v=>({id:v.id,name:v.name.slice(0,120),url:v.url}))
     } else if ((key==='elementStyles'||key==='mediaSettings'||key==='sectionStyles') && value && typeof value==='object' && !Array.isArray(value)) {
-      const permitted=key==='elementStyles'?['fontSize','fontWeight','color','textAlign','lineHeight','letterSpacing','fontFamily']:key==='mediaSettings'?['positionX','positionY','fit','height']:['background','paddingTop','paddingBottom']
+      const permitted=key==='elementStyles'?['fontSize','fontWeight','color','textAlign','lineHeight','letterSpacing','fontFamily','mobileFontSize','tabletFontSize']:key==='mediaSettings'?['positionX','positionY','fit','height','mobileSrc','poster','mobilePositionX','mobilePositionY','videoLoop','showControls']:['background','paddingTop','paddingBottom']
       const map=Object.create(null)
       for (const [path,attrs] of Object.entries(value)) {
         if (!/^[a-zA-Z0-9.]+$/.test(path)||!attrs||typeof attrs!=='object') continue
-        map[path]={};for(const [attribute,raw] of Object.entries(attrs))if(permitted.includes(attribute)&& (typeof raw==='string'||typeof raw==='number'))map[path][attribute]=raw
+        map[path]={};for(const [attribute,raw] of Object.entries(attrs))if(permitted.includes(attribute)&& (typeof raw==='string'||typeof raw==='number'||typeof raw==='boolean'))map[path][attribute]=raw
       }
       result[key]=map
     } else if (Array.isArray(template) && Array.isArray(value)) {
@@ -127,7 +140,7 @@ export function setPath(obj,path,value) {
   if(!parts.every(k=>/^[a-zA-Z0-9_-]+$/.test(k))||parts.some(k=>['__proto__','constructor','prototype'].includes(k)))return next
   if(keyedMaps.includes(parts[0])&&parts.length>=3){
     const key=parts.slice(1,-1).join('.'),attribute=parts.at(-1)
-    const allowed=parts[0]==='elementStyles'?['fontSize','fontWeight','color','textAlign','lineHeight','letterSpacing','fontFamily']:parts[0]==='mediaSettings'?['positionX','positionY','fit','height']:['background','paddingTop','paddingBottom']
+    const allowed=parts[0]==='elementStyles'?['fontSize','fontWeight','color','textAlign','lineHeight','letterSpacing','fontFamily','mobileFontSize','tabletFontSize']:parts[0]==='mediaSettings'?['positionX','positionY','fit','height','mobileSrc','poster','mobilePositionX','mobilePositionY','videoLoop','showControls']:['background','paddingTop','paddingBottom']
     if(!allowed.includes(attribute))return next
     next[parts[0]]??={};next[parts[0]][key]??={};next[parts[0]][key][attribute]=value
     return next
