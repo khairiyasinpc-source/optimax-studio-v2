@@ -54,6 +54,21 @@ content:
             - webp
             - gif
             - svg
+      - name: header_logo_width
+        label: "Header Logo Width - Desktop (px)"
+        type: number
+      - name: header_logo_max_height
+        label: "Header Logo Maximum Height (px)"
+        type: number
+      - name: header_logo_mobile_width
+        label: "Header Logo Width - Mobile (px)"
+        type: number
+      - name: footer_logo_width
+        label: "Footer Logo Width (px)"
+        type: number
+      - name: footer_logo_max_height
+        label: "Footer Logo Maximum Height (px)"
+        type: number
   - name: hero
     label: "02 · Hero"
     type: file
