@@ -9,5 +9,11 @@
   "button_primary_link": "https://optimaxeyespecialist.com/",
   "button_secondary_label": "Browse Treatments",
   "footnote": "MALAYSIA'S FIRST LASIK PROVIDER",
-  "side_label": "SEE LIFE BEAUTIFULLY."
+  "side_label": "SEE LIFE BEAUTIFULLY.",
+  "mobile_image": "",
+  "mobile_position_x": 62,
+  "mobile_position_y": 43,
+  "mobile_zoom": 100,
+  "mobile_height": 0,
+  "mobile_use_default": false
 }
