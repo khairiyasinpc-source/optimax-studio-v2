@@ -112,6 +112,24 @@
     },
     "video": {
       "type": "file"
+    },
+    "mobile_image": {
+      "type": "image"
+    },
+    "mobile_position_x": {
+      "type": "number"
+    },
+    "mobile_position_y": {
+      "type": "number"
+    },
+    "mobile_zoom": {
+      "type": "number"
+    },
+    "mobile_height": {
+      "type": "number"
+    },
+    "mobile_use_default": {
+      "type": "boolean"
     }
   },
   "partners": {
