@@ -15,6 +15,20 @@ const validMedia = value => {
   throw new Error(`Unsafe/unsupported media path: ${raw.slice(0,100)}`);
 };
 const escAttr = escapeHtml;
+// Inline small uploaded logos so they render reliably on GitHub Pages subpaths
+// and in the final self-contained IT handoff HTML. Keep source files in /media.
+const logoSource = raw => {
+  const path = validMedia(raw);
+  if (!path.startsWith('media/')) return path;
+  const extension = path.split('.').pop()?.toLowerCase();
+  const mime = {svg:'image/svg+xml',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',webp:'image/webp'}[extension];
+  if (!mime) return path;
+  const file = join(project,path);
+  if (!existsSync(file)) throw new Error(`Uploaded logo asset missing: ${path}`);
+  const bytes = readFileSync(file);
+  // Very large images stay as separate assets instead of bloating every HTML page.
+  return bytes.length <= 2 * 1024 * 1024 ? `data:${mime};base64,${bytes.toString('base64')}` : path;
+};
 const cssImage = raw => {
   const value = validMedia(raw);
   const href = value.startsWith('media/') ? `../${value}` : value;
@@ -39,7 +53,7 @@ let css = transform(read('templates/style.css'),true);
 // Optional logos: leave original brand wordmarks byte-for-byte unless user uploads a logo.
 for (const [key,cls] of [['header_logo','logo'],['footer_logo','logo inverse']]) {
   if (!content.settings[key]) continue;
-  const safe=escAttr(validMedia(content.settings[key]));
+  const safe=escAttr(logoSource(content.settings[key]));
   const selector = key==='header_logo' ? /(<a class="logo"[^>]+>)<span>OPTIMAX<sup>®<\/sup><\/span><small>EYE SPECIALIST<\/small>/ : /(<a class="logo inverse"[^>]+>)<span>OPTIMAX<sup>®<\/sup><\/span><small>EYE SPECIALIST<\/small>/;
   if (!selector.test(html)) throw new Error(`Cannot locate original ${key}`);
   html=html.replace(selector,`$1<img class="brand-upload" alt="OPTIMAX Eye Specialist" src="${safe}" />`);
