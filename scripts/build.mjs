@@ -78,9 +78,9 @@ if(content.settings.footer_logo){
 }
 if (content.hero.video) {
   const video=escAttr(validMedia(content.hero.video));
-  const anchor='<div class="hero-photo" role="img" aria-label="Editorial portrait representing a vision-care patient"></div>';
-  if (!html.includes(anchor)) throw new Error('Cannot locate hero image backdrop for optional video');
-  html=html.replace(anchor,`${anchor}\n    <video class="hero-video" src="${video}" autoplay muted loop playsinline preload="metadata" aria-hidden="true"></video>`);
+  const heroEnd=/<div class="hero-photo"[^>]*><\/div>/;
+  if (!heroEnd.test(html)) throw new Error('Cannot locate hero image backdrop for optional video');
+  html=html.replace(heroEnd,anchor=>`${anchor}\n    <video class="hero-video" src="${video}" autoplay muted loop playsinline preload="metadata" aria-hidden="true"></video>`);
   css+='\n.hero .hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;pointer-events:none}@media (prefers-reduced-motion:reduce){.hero .hero-video{display:none}}\n';
 }
 if (token.test(html)||token.test(css)) throw new Error('Unexpanded CMS placeholder');
