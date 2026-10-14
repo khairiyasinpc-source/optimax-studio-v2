@@ -3,5 +3,10 @@
   "description": "OPTIMAX Eye Specialist — Trusted in vision correction since 1995. Explore treatments, our specialists and nationwide eye care.",
   "header_button_label": "Book Free Eye Check",
   "header_button_link": "https://optimaxeyespecialist.com/",
-  "header_logo": "/media/optimax-logo.svg"
+  "header_logo": "/media/optimax-logo.svg",
+  "header_logo_width": 165,
+  "header_logo_max_height": 54,
+  "header_logo_mobile_width": 165,
+  "footer_logo_width": 165,
+  "footer_logo_max_height": 54
 }
