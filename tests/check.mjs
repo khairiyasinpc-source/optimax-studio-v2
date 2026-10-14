@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync, cpSync, mkdtempSync, writeFileSync, rmSync, existsSync } from 'node:fs';
+import { readFileSync, cpSync, mkdtempSync, writeFileSync, rmSync, existsSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -20,7 +20,9 @@ assert(existsSync('dist/.nojekyll'));
 // Verify changing CMS fields edits output and respects uploaded media in project subpaths.
 const temp=mkdtempSync(join(tmpdir(),'optimax-cms-test-'));
 try {
- for(const name of ['content','assets','templates','scripts','media'])cpSync(join(cwd,name),join(temp,name),{recursive:true});
+ for(const name of ['content','assets','templates','scripts'])cpSync(join(cwd,name),join(temp,name),{recursive:true});
+ if(existsSync(join(cwd,'media')))cpSync(join(cwd,'media'),join(temp,'media'),{recursive:true});
+ else mkdirSync(join(temp,'media'),{recursive:true});
  const p=join(temp,'content/hero.json');const hero=JSON.parse(readFileSync(p,'utf8'));
  hero.description='CMS UPDATE TEST: <script>alert("XSS")</script>';
  hero.image='/media/new-hero.webp';
