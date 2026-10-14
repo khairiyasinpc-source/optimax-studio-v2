@@ -56,9 +56,9 @@ for (const [key,cls] of [['header_logo','logo'],['footer_logo','logo inverse']])
   const safe=escAttr(logoSource(content.settings[key]));
   const selector = key==='header_logo' ? /(<a class="logo"[^>]+>)<span>OPTIMAX<sup>®<\/sup><\/span><small>EYE SPECIALIST<\/small>/ : /(<a class="logo inverse"[^>]+>)<span>OPTIMAX<sup>®<\/sup><\/span><small>EYE SPECIALIST<\/small>/;
   if (!selector.test(html)) throw new Error(`Cannot locate original ${key}`);
-  html=html.replace(selector,`$1<img class="brand-upload" alt="OPTIMAX Eye Specialist" src="${safe}" />`);
+  html=html.replace(selector,`$1<img class="brand-upload" width="165" height="54" alt="OPTIMAX Eye Specialist" src="${safe}" />`);
 }
-if (content.settings.header_logo || content.settings.footer_logo) css += '\n.logo .brand-upload{display:block;max-width:165px;max-height:54px;width:auto;height:auto;object-fit:contain}.footer .logo .brand-upload{max-height:55px}\n';
+if (content.settings.header_logo || content.settings.footer_logo) css += '\n.logo:has(.brand-upload){width:165px;min-width:165px;height:54px}.logo .brand-upload{display:block;width:165px;height:54px;max-width:100%;object-fit:contain}.footer .logo .brand-upload{height:54px}\n';
 if (content.hero.video) {
   const video=escAttr(validMedia(content.hero.video));
   const anchor='<div class="hero-photo" role="img" aria-label="Editorial portrait representing a vision-care patient"></div>';
