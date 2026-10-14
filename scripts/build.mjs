@@ -59,6 +59,24 @@ if(uploadedHero.startsWith('media/')){
   if(!html.includes(mark)) throw new Error('Hero background element missing');
   html=html.replace(mark,`<div class="hero-photo" style="background-image:url('${uploadedHero}')" role="img"`);
 }
+// Responsive mobile Hero controls: CSS only below 650px; desktop stays untouched.
+const mh=content.hero;
+const bounded=(v,def,min,max)=>{const n=Number(v);return Number.isFinite(n)?Math.max(min,Math.min(max,n)):def;};
+if(mh.mobile_use_default!==true){
+  const x=bounded(mh.mobile_position_x,62,0,100),y=bounded(mh.mobile_position_y,43,0,100);
+  const zoom=bounded(mh.mobile_zoom,100,100,180);
+  const height=bounded(mh.mobile_height,0,0,700);
+  const mobileImage=mh.mobile_image?validMedia(mh.mobile_image):'';
+  if(mobileImage){
+    // Validate uploads before publishing, including image paths under GitHub Pages.
+    const mobileSrc=mobileImage.startsWith('media/')?mobileImage:mobileImage;
+    const safeCss=mobileSrc.replaceAll('\\\\','%5C').replaceAll("'",'%27').replaceAll('"','%22').replaceAll('(','%28').replaceAll(')','%29');
+    css+=`\n@media(max-width:650px){.hero .hero-photo{background-image:url('../${safeCss}')!important}}\n`;
+  }
+  const configuredHeight=height===0?'clamp(230px,64vw,320px)':`${Math.max(180,height)}px`;
+  // Background zoom uses CSS background-size. It does not resize the text/section.
+  css+=`\n@media(max-width:650px){.hero{--mobile-hero-image-height:${configuredHeight}}.hero .hero-photo{background-position:${x}% ${y}% !important;background-size:${zoom}% auto}}\n`;
+}
 // Optional logos: leave original brand wordmarks byte-for-byte unless user uploads a logo.
 for (const [key,cls] of [['header_logo','logo'],['footer_logo','logo inverse']]) {
   if (!content.settings[key]) continue;
