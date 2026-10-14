@@ -71,11 +71,11 @@ if(mh.mobile_use_default!==true){
     // Validate uploads before publishing, including image paths under GitHub Pages.
     const mobileSrc=mobileImage.startsWith('media/')?mobileImage:mobileImage;
     const safeCss=mobileSrc.replaceAll('\\\\','%5C').replaceAll("'",'%27').replaceAll('"','%22').replaceAll('(','%28').replaceAll(')','%29');
-    css+=`\n@media(max-width:650px){.hero .hero-photo{background-image:url('../${safeCss}')!important}}\n`;
+    css+=`\n@media(max-width:650px){.hero .hero-photo{background-image:url('${mobileSrc.startsWith('media/')?'../':''}${safeCss}')!important}}\n`;
   }
   const configuredHeight=height===0?'clamp(230px,64vw,320px)':`${Math.max(180,height)}px`;
   // Background zoom uses CSS background-size. It does not resize the text/section.
-  css+=`\n@media(max-width:650px){.hero{--mobile-hero-image-height:${configuredHeight}}.hero .hero-photo{background-position:${x}% ${y}% !important;background-size:${zoom}% auto}}\n`;
+  css+=`\n@media(max-width:650px){.hero{--mobile-hero-image-height:${configuredHeight}}.hero .hero-photo{background-position:${x}% ${y}% !important;${zoom===100?'':`background-size:${zoom}% auto;`}}}\n`;
 }
 // Optional logos: leave original brand wordmarks byte-for-byte unless user uploads a logo.
 for (const [key,cls] of [['header_logo','logo'],['footer_logo','logo inverse']]) {
