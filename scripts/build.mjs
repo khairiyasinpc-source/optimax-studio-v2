@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync, mkdirSync, cpSync, existsSync } from 'node:fs';
 import { resolve, join } from 'node:path';
+import { createHash } from 'node:crypto';
 
 const project = resolve(import.meta.dirname, '..');
 const read = path => readFileSync(join(project,path),'utf8');
@@ -50,6 +51,14 @@ function transform(template,isCss=false) {
 }
 let html = transform(read('templates/index.html'));
 let css = transform(read('templates/style.css'),true);
+// Put CMS-uploaded Hero image in the HTML element too, not only external CSS.
+// This wins over a previously cached stylesheet and works under a GitHub Pages subpath.
+const uploadedHero=validMedia(content.hero.image || '');
+if(uploadedHero.startsWith('media/')){
+  const mark='<div class="hero-photo" role="img"';
+  if(!html.includes(mark)) throw new Error('Hero background element missing');
+  html=html.replace(mark,`<div class="hero-photo" style="background-image:url('${uploadedHero}')" role="img"`);
+}
 // Optional logos: leave original brand wordmarks byte-for-byte unless user uploads a logo.
 for (const [key,cls] of [['header_logo','logo'],['footer_logo','logo inverse']]) {
   if (!content.settings[key]) continue;
@@ -75,9 +84,14 @@ if (content.hero.video) {
   css+='\n.hero .hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;pointer-events:none}@media (prefers-reduced-motion:reduce){.hero .hero-video{display:none}}\n';
 }
 if (token.test(html)||token.test(css)) throw new Error('Unexpanded CMS placeholder');
+// Content-hashed CSS eliminates stale cached Hero images after CMS saves.
+const cssName='style-'+createHash('sha256').update(css).digest('hex').slice(0,12)+'.css';
+const htmlForSite=html.replace('href="assets/style.css"',`href="assets/${cssName}"`);
+if(htmlForSite===html) throw new Error('Cannot locate stylesheet link');
 mkdirSync(join(project,'dist/assets'),{recursive:true});
-writeFileSync(join(project,'dist/index.html'),html);
+writeFileSync(join(project,'dist/index.html'),htmlForSite);
 writeFileSync(join(project,'dist/assets/style.css'),css);
+writeFileSync(join(project,'dist/assets',cssName),css);
 cpSync(join(project,'assets/site.js'),join(project,'dist/assets/site.js'));
 if(existsSync(join(project,'media')))cpSync(join(project,'media'),join(project,'dist/media'),{recursive:true});
 writeFileSync(join(project,'dist/.nojekyll'),'');
