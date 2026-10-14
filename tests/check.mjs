@@ -51,6 +51,31 @@ try {
  const testVideo=spawnSync(process.execPath,[join(temp,'scripts/build.mjs')],{encoding:'utf8'});
  assert.equal(testVideo.status,0,testVideo.stderr);
  assert(readFileSync(join(temp,'dist/index.html'),'utf8').includes('autoplay muted loop playsinline'));
+ // Mobile framing: custom mobile image, crop and height must modify mobile CSS only.
+ hero.video=''; hero.mobile_image='/media/new-hero.webp'; hero.mobile_position_x=18; hero.mobile_position_y=81; hero.mobile_zoom=135; hero.mobile_height=420; hero.mobile_use_default=false;
+ writeFileSync(p,JSON.stringify(hero));
+ const mobileRun=spawnSync(process.execPath,[join(temp,'scripts/build.mjs')],{encoding:'utf8'});
+ assert.equal(mobileRun.status,0,mobileRun.stderr);
+ const mobileCss=readFileSync(join(temp,'dist/assets/style.css'),'utf8');
+ assert(mobileCss.includes("background-image:url('../media/new-hero.webp')!important"));
+ assert(mobileCss.includes('background-position:18% 81% !important'));
+ assert(mobileCss.includes('background-size:135% auto'));
+ assert(mobileCss.includes('--mobile-hero-image-height:420px'));
+ assert(mobileCss.indexOf('@media(max-width:650px){.hero .hero-photo{background-image:')>=0);
+ // Reset must ignore all mobile custom fields and restore original behavior.
+ hero.mobile_use_default=true;writeFileSync(p,JSON.stringify(hero));
+ const resetRun=spawnSync(process.execPath,[join(temp,'scripts/build.mjs')],{encoding:'utf8'});
+ assert.equal(resetRun.status,0,resetRun.stderr);
+ const resetCss=readFileSync(join(temp,'dist/assets/style.css'),'utf8');
+ assert(!resetCss.includes('background-position:18% 81% !important'));
+ assert(!resetCss.includes('background-size:135% auto'));
+ assert(!resetCss.includes("background-image:url('../media/new-hero.webp')!important"));
+ // Invalid custom image path must not compile.
+ hero.mobile_use_default=false;hero.mobile_image='javascript:alert(1)';writeFileSync(p,JSON.stringify(hero));
+ const badMobile=spawnSync(process.execPath,[join(temp,'scripts/build.mjs')],{encoding:'utf8'});
+ assert.notEqual(badMobile.status,0,'Reject unsafe mobile image path');
+ hero.mobile_image=''; hero.mobile_use_default=true;
+ writeFileSync(p,JSON.stringify(hero));
  // Reject unsafe file paths.
  hero.video='javascript:alert(1)';writeFileSync(p,JSON.stringify(hero));
  const bad=spawnSync(process.execPath,[join(temp,'scripts/build.mjs')],{encoding:'utf8'});

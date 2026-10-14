@@ -86,6 +86,44 @@ content:
             - webp
             - gif
             - svg
+      - name: mobile_image
+        label: "Mobile Hero Image (optional)"
+        type: image
+        description: "Upload a separate mobile crop. Leave empty to use Desktop Hero image."
+        options:
+          extensions: [png, jpg, jpeg, webp, gif, svg]
+      - name: mobile_position_x
+        label: "Mobile Image Position X (%)"
+        type: number
+        description: "0 = focus left, 50 = centre, 100 = focus right. Default 62."
+        options:
+          min: 0
+          max: 100
+      - name: mobile_position_y
+        label: "Mobile Image Position Y (%)"
+        type: number
+        description: "0 = focus top, 50 = centre, 100 = bottom. Default 43."
+        options:
+          min: 0
+          max: 100
+      - name: mobile_zoom
+        label: "Mobile Image Zoom (%)"
+        type: number
+        description: "100 = natural fit (default). Larger values zoom into image, maximum 180."
+        options:
+          min: 100
+          max: 180
+      - name: mobile_height
+        label: "Mobile Image Height (px)"
+        type: number
+        description: "0 = original automatic height. Custom range 180–700 px."
+        options:
+          min: 0
+          max: 700
+      - name: mobile_use_default
+        label: "Reset Mobile Framing to Original"
+        type: boolean
+        description: "ON ignores mobile custom image, crop, zoom and height. Turn OFF to use custom settings again."
       - name: eyebrow
         label: "Eyebrow"
         type: string
