@@ -21,7 +21,7 @@ assert(existsSync('dist/.nojekyll'));
 // avoiding broken /media links when the site lives under /optimax-studio-v2/.
 const configuredLogo=JSON.parse(read('content/settings.json')).header_logo || '';
 if (configuredLogo.startsWith('/media/') && ['svg','png','jpg','jpeg','webp','gif'].includes(configuredLogo.split('.').pop().toLowerCase())) {
-  const actualFile=join(cwd,configuredLogo.replace(/^\\/+/, ''));
+  const actualFile=join(cwd,configuredLogo.slice(1));
   if(existsSync(actualFile) && readFileSync(actualFile).length <= 2*1024*1024) {
     const match=html.match(/class="brand-upload"[^>]*src="data:[^;"]+;base64,([^"]+)"/);
     assert(match, 'The CMS header logo must be embedded in the published homepage');
