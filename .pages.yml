@@ -1,0 +1,418 @@
+# OPTIMAX Homepage · Pages CMS
+# Empty optional image field preserves the current artwork.
+media:
+  input: media
+  output: /media
+  rename: safe
+  extensions:
+    - png
+    - jpg
+    - jpeg
+    - webp
+    - gif
+    - svg
+    - mp4
+    - webm
+content:
+  - name: settings
+    label: "01 · Site Settings"
+    type: file
+    path: content/settings.json
+    format: json
+    fields:
+      - name: page_title
+        label: "Page Title"
+        type: string
+      - name: description
+        label: "Description"
+        type: text
+      - name: header_button_label
+        label: "Header Button Label"
+        type: string
+      - name: header_button_link
+        label: "Header Button Link"
+        type: string
+      - name: header_logo
+        label: "Header Logo (leave blank to keep current)"
+        type: image
+        options:
+          extensions:
+            - png
+            - jpg
+            - jpeg
+            - webp
+            - gif
+            - svg
+      - name: footer_logo
+        label: "Footer Logo (leave blank to keep current)"
+        type: image
+        options:
+          extensions:
+            - png
+            - jpg
+            - jpeg
+            - webp
+            - gif
+            - svg
+  - name: hero
+    label: "02 · Hero"
+    type: file
+    path: content/hero.json
+    format: json
+    fields:
+      - name: image
+        label: "Image (leave blank to keep current)"
+        type: image
+        options:
+          extensions:
+            - png
+            - jpg
+            - jpeg
+            - webp
+            - gif
+            - svg
+      - name: eyebrow
+        label: "Eyebrow"
+        type: string
+      - name: title_line_1
+        label: "Title Line 1"
+        type: string
+      - name: title_line_2
+        label: "Title Line 2"
+        type: string
+      - name: title_accent
+        label: "Title Accent"
+        type: string
+      - name: description
+        label: "Description"
+        type: text
+      - name: button_primary_label
+        label: "Button Primary Label"
+        type: string
+      - name: button_primary_link
+        label: "Button Primary Link"
+        type: string
+      - name: button_secondary_label
+        label: "Button Secondary Label"
+        type: string
+      - name: footnote
+        label: "Footnote"
+        type: string
+      - name: side_label
+        label: "Side Label"
+        type: string
+      - name: video
+        label: "Video (optional MP4/WebM)"
+        type: file
+        options:
+          extensions:
+            - mp4
+            - webm
+  - name: stats
+    label: "03 · Trust Statistics"
+    type: file
+    path: content/stats.json
+    format: json
+    fields:
+      - name: established_value
+        label: "Established Value"
+        type: string
+      - name: established_label
+        label: "Established Label"
+        type: string
+      - name: experience_value
+        label: "Experience Value"
+        type: string
+      - name: experience_label
+        label: "Experience Label"
+        type: string
+      - name: centres_value
+        label: "Centres Value"
+        type: string
+      - name: centres_label
+        label: "Centres Label"
+        type: string
+      - name: treated_value
+        label: "Treated Value"
+        type: string
+      - name: treated_label
+        label: "Treated Label"
+        type: string
+  - name: treatments
+    label: "04 · What We Do"
+    type: file
+    path: content/treatments.json
+    format: json
+    fields:
+      - name: eyebrow
+        label: "Eyebrow"
+        type: string
+      - name: title
+        label: "Title"
+        type: string
+      - name: description
+        label: "Description"
+        type: text
+      - name: cta_label
+        label: "Cta Label"
+        type: string
+      - name: laser_image
+        label: "Laser Image (leave blank to keep current)"
+        type: image
+        options:
+          extensions:
+            - png
+            - jpg
+            - jpeg
+            - webp
+            - gif
+            - svg
+      - name: cataract_image
+        label: "Cataract Image (leave blank to keep current)"
+        type: image
+        options:
+          extensions:
+            - png
+            - jpg
+            - jpeg
+            - webp
+            - gif
+            - svg
+      - name: screening_image
+        label: "Screening Image (leave blank to keep current)"
+        type: image
+        options:
+          extensions:
+            - png
+            - jpg
+            - jpeg
+            - webp
+            - gif
+            - svg
+      - name: children_image
+        label: "Children Image (leave blank to keep current)"
+        type: image
+        options:
+          extensions:
+            - png
+            - jpg
+            - jpeg
+            - webp
+            - gif
+            - svg
+      - name: laser_title
+        label: "Laser Title"
+        type: string
+      - name: laser_description
+        label: "Laser Description"
+        type: text
+      - name: cataract_title
+        label: "Cataract Title"
+        type: string
+      - name: cataract_description
+        label: "Cataract Description"
+        type: text
+      - name: screening_title
+        label: "Screening Title"
+        type: string
+      - name: screening_description
+        label: "Screening Description"
+        type: text
+      - name: children_title
+        label: "Children Title"
+        type: string
+      - name: children_description
+        label: "Children Description"
+        type: text
+  - name: why
+    label: "05 · Why Optimax"
+    type: file
+    path: content/why.json
+    format: json
+    fields:
+      - name: image
+        label: "Image (leave blank to keep current)"
+        type: image
+        options:
+          extensions:
+            - png
+            - jpg
+            - jpeg
+            - webp
+            - gif
+            - svg
+      - name: eyebrow
+        label: "Eyebrow"
+        type: string
+      - name: title_line_1
+        label: "Title Line 1"
+        type: string
+      - name: title_line_2
+        label: "Title Line 2"
+        type: string
+      - name: description
+        label: "Description"
+        type: text
+      - name: years_title
+        label: "Years Title"
+        type: string
+      - name: years_description
+        label: "Years Description"
+        type: string
+      - name: centres_title
+        label: "Centres Title"
+        type: string
+      - name: centres_description
+        label: "Centres Description"
+        type: string
+      - name: technology_title
+        label: "Technology Title"
+        type: string
+      - name: technology_description
+        label: "Technology Description"
+        type: string
+  - name: doctors
+    label: "06 · Doctors"
+    type: file
+    path: content/doctors.json
+    format: json
+    fields:
+      - name: image
+        label: "Image (leave blank to keep current)"
+        type: image
+        options:
+          extensions:
+            - png
+            - jpg
+            - jpeg
+            - webp
+            - gif
+            - svg
+      - name: eyebrow
+        label: "Eyebrow"
+        type: string
+      - name: title_line_1
+        label: "Title Line 1"
+        type: string
+      - name: title_line_2
+        label: "Title Line 2"
+        type: string
+      - name: description
+        label: "Description"
+        type: text
+      - name: button_label
+        label: "Button Label"
+        type: string
+      - name: caption
+        label: "Caption"
+        type: string
+  - name: awards
+    label: "07 · Awards"
+    type: file
+    path: content/awards.json
+    format: json
+    fields:
+      - name: eyebrow
+        label: "Eyebrow"
+        type: string
+      - name: title_line_1
+        label: "Title Line 1"
+        type: string
+      - name: title_line_2
+        label: "Title Line 2"
+        type: string
+      - name: description
+        label: "Description"
+        type: text
+  - name: partners
+    label: "08 · Partners & Media"
+    type: file
+    path: content/partners.json
+    format: json
+    fields:
+      - name: eyebrow
+        label: "Eyebrow"
+        type: string
+      - name: title_line_1
+        label: "Title Line 1"
+        type: string
+      - name: title_line_2
+        label: "Title Line 2"
+        type: string
+      - name: description
+        label: "Description"
+        type: text
+      - name: right_eyebrow
+        label: "Right Eyebrow"
+        type: string
+      - name: right_title
+        label: "Right Title"
+        type: string
+      - name: right_description
+        label: "Right Description"
+        type: text
+  - name: reviews
+    label: "09 · Reviews"
+    type: file
+    path: content/reviews.json
+    format: json
+    fields:
+      - name: eyebrow
+        label: "Eyebrow"
+        type: string
+      - name: title
+        label: "Title"
+        type: string
+      - name: description
+        label: "Description"
+        type: text
+      - name: score
+        label: "Score"
+        type: string
+  - name: journey
+    label: "10 · Patient Journey"
+    type: file
+    path: content/journey.json
+    format: json
+    fields:
+      - name: eyebrow
+        label: "Eyebrow"
+        type: string
+      - name: title_line_1
+        label: "Title Line 1"
+        type: string
+      - name: title_line_2
+        label: "Title Line 2"
+        type: string
+      - name: description
+        label: "Description"
+        type: text
+  - name: contact
+    label: "11 · Contact"
+    type: file
+    path: content/contact.json
+    format: json
+    fields:
+      - name: image
+        label: "Image (leave blank to keep current)"
+        type: image
+        options:
+          extensions:
+            - png
+            - jpg
+            - jpeg
+            - webp
+            - gif
+            - svg
+      - name: eyebrow
+        label: "Eyebrow"
+        type: string
+      - name: title_line_1
+        label: "Title Line 1"
+        type: string
+      - name: title_line_2
+        label: "Title Line 2"
+        type: string
+      - name: description
+        label: "Description"
+        type: text
