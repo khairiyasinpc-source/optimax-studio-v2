@@ -58,7 +58,15 @@ for (const [key,cls] of [['header_logo','logo'],['footer_logo','logo inverse']])
   if (!selector.test(html)) throw new Error(`Cannot locate original ${key}`);
   html=html.replace(selector,`$1<img class="brand-upload" width="165" height="54" alt="OPTIMAX Eye Specialist" src="${safe}" />`);
 }
-if (content.settings.header_logo || content.settings.footer_logo) css += '\n.logo:has(.brand-upload){width:165px;min-width:165px;height:54px}.logo .brand-upload{display:block;width:165px;height:54px;max-width:100%;object-fit:contain}.footer .logo .brand-upload{height:54px}\n';
+const logoSize=(value,fallback,min,max)=>{const n=Number(value);return value==null||String(value).trim()===''||!Number.isFinite(n)?fallback:Math.round(Math.min(max,Math.max(min,n)))};
+if(content.settings.header_logo){
+ const w=logoSize(content.settings.header_logo_width,165,60,300),h=logoSize(content.settings.header_logo_max_height,54,24,68),m=logoSize(content.settings.header_logo_mobile_width,165,50,190);
+ css+=`\n.header .logo:has(.brand-upload){width:${w}px;min-width:${w}px;height:${h}px}.header .logo .brand-upload{display:block;width:100%;height:100%;object-fit:contain;object-position:left center}\n@media(max-width:650px){.header .logo:has(.brand-upload){width:${m}px;min-width:${m}px}}\n`;
+}
+if(content.settings.footer_logo){
+ const w=logoSize(content.settings.footer_logo_width,165,60,300),h=logoSize(content.settings.footer_logo_max_height,54,24,90);
+ css+=`\n.footer .logo:has(.brand-upload){width:${w}px;min-width:${w}px;height:${h}px}.footer .logo .brand-upload{display:block;width:100%;height:100%;object-fit:contain;object-position:left center}\n`;
+}
 if (content.hero.video) {
   const video=escAttr(validMedia(content.hero.video));
   const anchor='<div class="hero-photo" role="img" aria-label="Editorial portrait representing a vision-care patient"></div>';
