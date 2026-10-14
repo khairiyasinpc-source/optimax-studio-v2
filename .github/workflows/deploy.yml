@@ -1,54 +1,56 @@
-
-name: Deploy OPTIMAX V2 Demo
-
+name: OPTIMAX CMS Homepage Demo
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
-
 permissions:
   contents: read
   pages: write
   id-token: write
-
 concurrency:
-  group: optimax-pages
+  group: optimax-cms-pages-${{ github.ref }}
   cancel-in-progress: true
-
 jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout website
+        uses: actions/checkout@v4
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Render CMS content (no dependencies)
+        run: node scripts/build.mjs
+      - name: Test homepage and CMS field updates
+        run: node tests/check.mjs
+      - name: Upload deployable website for IT handoff
+        uses: actions/upload-artifact@v4
+        with:
+          name: optimax-homepage-static-site
+          path: dist/
+          include-hidden-files: true
   deploy:
+    if: github.event_name != 'pull_request'
+    needs: build-and-test
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Download generated website
+        uses: actions/download-artifact@v4
         with:
-          node-version: '22'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Run V2 content logic tests
-        run: npm run test:logic
-
-      - name: Build website
-        run: |
-          REPO_NAME="${GITHUB_REPOSITORY#*/}"
-          npm run build -- --base="/${REPO_NAME}/"
-
+          name: optimax-homepage-static-site
+          path: dist/
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
-
-      - name: Upload website
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
-
-      - name: Deploy website
+          path: dist/
+      - name: Deploy GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
