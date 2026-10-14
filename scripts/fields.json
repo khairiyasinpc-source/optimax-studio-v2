@@ -1,0 +1,276 @@
+{
+  "stats": {
+    "established_value": {
+      "type": "string"
+    },
+    "established_label": {
+      "type": "string"
+    },
+    "experience_value": {
+      "type": "string"
+    },
+    "experience_label": {
+      "type": "string"
+    },
+    "centres_value": {
+      "type": "string"
+    },
+    "centres_label": {
+      "type": "string"
+    },
+    "treated_value": {
+      "type": "string"
+    },
+    "treated_label": {
+      "type": "string"
+    }
+  },
+  "reviews": {
+    "eyebrow": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "text"
+    },
+    "score": {
+      "type": "string"
+    }
+  },
+  "doctors": {
+    "image": {
+      "type": "image"
+    },
+    "eyebrow": {
+      "type": "string"
+    },
+    "title_line_1": {
+      "type": "string"
+    },
+    "title_line_2": {
+      "type": "string"
+    },
+    "description": {
+      "type": "text"
+    },
+    "button_label": {
+      "type": "string"
+    },
+    "caption": {
+      "type": "string"
+    }
+  },
+  "journey": {
+    "eyebrow": {
+      "type": "string"
+    },
+    "title_line_1": {
+      "type": "string"
+    },
+    "title_line_2": {
+      "type": "string"
+    },
+    "description": {
+      "type": "text"
+    }
+  },
+  "hero": {
+    "image": {
+      "type": "image"
+    },
+    "eyebrow": {
+      "type": "string"
+    },
+    "title_line_1": {
+      "type": "string"
+    },
+    "title_line_2": {
+      "type": "string"
+    },
+    "title_accent": {
+      "type": "string"
+    },
+    "description": {
+      "type": "text"
+    },
+    "button_primary_label": {
+      "type": "string"
+    },
+    "button_primary_link": {
+      "type": "string"
+    },
+    "button_secondary_label": {
+      "type": "string"
+    },
+    "footnote": {
+      "type": "string"
+    },
+    "side_label": {
+      "type": "string"
+    },
+    "video": {
+      "type": "file"
+    }
+  },
+  "partners": {
+    "eyebrow": {
+      "type": "string"
+    },
+    "title_line_1": {
+      "type": "string"
+    },
+    "title_line_2": {
+      "type": "string"
+    },
+    "description": {
+      "type": "text"
+    },
+    "right_eyebrow": {
+      "type": "string"
+    },
+    "right_title": {
+      "type": "string"
+    },
+    "right_description": {
+      "type": "text"
+    }
+  },
+  "why": {
+    "image": {
+      "type": "image"
+    },
+    "eyebrow": {
+      "type": "string"
+    },
+    "title_line_1": {
+      "type": "string"
+    },
+    "title_line_2": {
+      "type": "string"
+    },
+    "description": {
+      "type": "text"
+    },
+    "years_title": {
+      "type": "string"
+    },
+    "years_description": {
+      "type": "string"
+    },
+    "centres_title": {
+      "type": "string"
+    },
+    "centres_description": {
+      "type": "string"
+    },
+    "technology_title": {
+      "type": "string"
+    },
+    "technology_description": {
+      "type": "string"
+    }
+  },
+  "contact": {
+    "image": {
+      "type": "image"
+    },
+    "eyebrow": {
+      "type": "string"
+    },
+    "title_line_1": {
+      "type": "string"
+    },
+    "title_line_2": {
+      "type": "string"
+    },
+    "description": {
+      "type": "text"
+    }
+  },
+  "settings": {
+    "page_title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "text"
+    },
+    "header_button_label": {
+      "type": "string"
+    },
+    "header_button_link": {
+      "type": "string"
+    },
+    "header_logo": {
+      "type": "image"
+    },
+    "footer_logo": {
+      "type": "image"
+    }
+  },
+  "treatments": {
+    "eyebrow": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "text"
+    },
+    "cta_label": {
+      "type": "string"
+    },
+    "laser_image": {
+      "type": "image"
+    },
+    "cataract_image": {
+      "type": "image"
+    },
+    "screening_image": {
+      "type": "image"
+    },
+    "children_image": {
+      "type": "image"
+    },
+    "laser_title": {
+      "type": "string"
+    },
+    "laser_description": {
+      "type": "text"
+    },
+    "cataract_title": {
+      "type": "string"
+    },
+    "cataract_description": {
+      "type": "text"
+    },
+    "screening_title": {
+      "type": "string"
+    },
+    "screening_description": {
+      "type": "text"
+    },
+    "children_title": {
+      "type": "string"
+    },
+    "children_description": {
+      "type": "text"
+    }
+  },
+  "awards": {
+    "eyebrow": {
+      "type": "string"
+    },
+    "title_line_1": {
+      "type": "string"
+    },
+    "title_line_2": {
+      "type": "string"
+    },
+    "description": {
+      "type": "text"
+    }
+  }
+}

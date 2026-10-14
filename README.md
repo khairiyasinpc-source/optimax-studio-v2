@@ -1,92 +1,68 @@
-# OPTIMAX Visual Editor V2 — Clean Demo Repository
+# OPTIMAX Homepage + Pages CMS
 
-This is the **clean source for the EXISTING V2 design/editor** supplied in `Optimax-main.zip`.
-The old V1 copy and nested `(2)` folders are deliberately excluded. The editor UI is not redesigned.
+**Design-locked static website**. Homepage output (`index.html`, `assets/style.css`, `assets/site.js`) remains **byte-for-byte identical** to the approved static homepage provided on 14 October 2026 when CMS fields have not been edited. No Visual Editor, React, npm dependencies or runtime CMS script. The public site contains HTML/CSS/JS only.
 
-## File structure
+## For designers (first-time setup)
 
-```text
-.github/workflows/deploy.yml  # GitHub Pages deployment
-src/                         # website and original V2 editor
-public/site-content.json      # PUBLISHED design content
-index.html
-package.json
-vite.config.js
-tests/                       # basic content-schema tests
-```
+1. Keep the existing live demo unchanged until you are happy with this package. Back up current `optimax-studio-v2` repository if replacing its contents.
+2. Upload the **contents** of this project to the root of a GitHub repository (not the containing folder), including hidden `.pages.yml` and `.github/workflows/deploy.yml`. Remove the old React editor files from the destination repository when fully replacing the old project, or create a clean project repository. Do not upload `node_modules` or secrets.
+3. From the repository **Settings → Pages → Source**, choose **GitHub Actions**. Once the workflow finishes successfully, the demo will show the unchanged static homepage.
+4. Owner visits <https://app.pagescms.org>, signs in using GitHub, and installs/authorizes **Pages CMS** for this repository. Pages CMS detects root `.pages.yml` automatically.
+5. In Pages CMS, select **02 · Hero → Replace Hero Image**, upload a new PNG/JPG/WebP and press Save. Pages CMS commits the edited JSON and uploaded media; the GitHub workflow rebuilds and deploys the demo automatically.
+6. For your team of **three designers in total**, invite the other two as Pages CMS collaborators using their email addresses in Pages CMS. They do not need GitHub accounts or ChatGPT subscriptions to edit fields. Only repo owner/GitHub maintainer can change `.pages.yml` or manage invitations.
 
-## Put this project in a NEW GitHub repository
+**Important:** Pages CMS isn't a Figma-style visual editor. It edits only the explicitly configured content and media fields. Website layout, spacing, fonts, colors, and CSS are intentionally locked to avoid changing the design.
 
-1. Create a **new PUBLIC** GitHub repository (suggested name: `optimax-studio-v2`). Do NOT delete the old `Optimax` repository.
-2. Extract this ZIP on Mac. Upload **the contents** of the extracted folder to the **root** of the new repo, NOT the folder itself. Ensure `.github/workflows/deploy.yml` is present in the repo (in Finder: Cmd+Shift+. shows hidden `.github`).
-3. Commit to branch `main`.
-4. Under **Settings → Pages → Build and deployment → Source**, choose **GitHub Actions**.
-5. Check the **Actions** tab. When `Deploy OPTIMAX V2 Demo` completes successfully, open:
-   - Website: `https://USERNAME.github.io/REPO-NAME/`
-   - Editor: `https://USERNAME.github.io/REPO-NAME/?edit=1`
+## What can be edited
 
-The deploy workflow automatically uses the new repository name for the URL base path; you do not need to manually change `/Optimax/` references.
+11 tabs / 84 fields: Site Settings (logo/header CTA/meta), Hero image and optional background video, trust statistics, What We Do text and 4 treatment card images/text, Why Optimax image and copy, Doctors image and copy, Awards heading, Partners and Media copy, Reviews summary/rating, Patient Journey heading, Contact image and copy.
 
-## Important: existing drafts
+**Existing Unsplash images intentionally remain unchanged** until you upload replacements. Empty `Replace ... Image` fields mean keep the original image. The original external image URLs live in `scripts/original-media.json`. The external demo images have not been bundled; replace them with approved OPTIMAX photography before company IT handover.
 
-This project includes only `public/site-content.json` from the GitHub ZIP you uploaded, not browser-local drafts. If you have unsaved design changes in your old V2 editor, go to the OLD editor, **Export for GitHub** and keep that `site-content.json`. Import it into the NEW editor, review, then export and publish through the new repo `public/` directory.
+### Recommended asset size
 
-Drafts are intentionally scoped by repository base path so drafts from the old `Optimax` URL do not silently overwrite your new demo preview.
+- Hero photo: WebP 300–500 KB, ideally below 2 MB.
+- Card/section photo: WebP or JPG 100–300 KB, ideally below 2 MB.
+- Logo: SVG or transparent PNG; SVG ideally below 100 KB.
+- GIF: ideally below 1 MB; avoid heavy animated banners.
+- Optional hero MP4: H.264, 5–10 sec, muted loop, ideally 3–5 MB, max recommendation 20 MB. Autoplay on mobile is subject to browser and device restrictions.
+- These are recommendations, not enforced platform limits. GitHub also has file-size/traffic limits.
 
-## Current V2 features (implemented)
+## Publishing & repo structure
 
-- Editable homepage, Layers sidebar, Properties inspector, section order, visibility and locking.
-- Text, image, logo, icon and button controls.
-- Gradient editor for **hero only** (not universal gradient yet).
-- Responsive canvas, in-editor preview, undo/redo.
-- Browser-local draft and import/export of `site-content.json`.
+| Location | Purpose |
+| --- | --- |
+| `.pages.yml` | Pages CMS tabs/fields and media uploader |
+| `content/*.json` | Only edit these through Pages CMS |
+| `media/` | Uploaded photos, logos, GIF and videos |
+| `templates/index.html` | Exact locked original HTML design with placeholders |
+| `templates/style.css` | Exact locked original CSS design with media placeholders |
+| `assets/site.js` | Exact original mobile-navigation JavaScript |
+| `scripts/build.mjs` | Dependency-free Node 22 renderer |
+| `scripts/fields.json` | Renderer field definitions |
+| `scripts/original-media.json` | Original demo photos for untouched images |
+| `.github/workflows/deploy.yml` | Test and deploy after CMS saves to main |
+| `dist/` | Compiled static website, ready for IT |
 
-## Features PLANNED, not yet built here
-
-- 3 designer logins, shared online drafts, secure one-click Save & Publish.
-- Multi-page builder, add new reusable blank/template sections.
-- Universal gradient on every suitable element.
-- Upload/host MP4, GIF and video backgrounds, plus media usage monitor.
-- Editor dark/light mode and independent website full-screen preview.
-- Final website/source/assets ZIP handoff to OPTIMAX IT.
-
-These features must be built, tested and integrated incrementally before team members can use them. Do **not** tell designers that this V2 ZIP already supports collaborative real-time editing or publishing.
-
-## Publishing in this current V2
-
-1. Open `?edit=1`, edit and preview.
-2. Click **Export for GitHub** and download `site-content.json`.
-3. Replace `public/site-content.json` in your NEW repository and commit.
-4. Wait for GitHub Actions to show **success**; refresh the website link.
-
-**Security:** `?edit=1` is NOT private, and browser draft is NOT shared across team members. Do not store credentials or patient data here. Anyone with the link can edit their own local preview, but they cannot commit changes without repo write access. This is a demo tool, not production healthcare software.
-
-**Demo content:** The original site contains external stock photos, placeholders, medical copy and a demo mailto enquiry form. Verify all approved content before handing it over to IT or deploying on the official company domain.
-
-## Development and tests
+Run locally with Node 22:
 
 ```bash
-npm install
-npm run test:logic
-npm run dev
-npm run build
+node scripts/build.mjs
+node tests/check.mjs
 ```
 
-Building the React website requires installing dependencies. The included logic tests were run against the source package; full Vite build verification depends on npm packages being available. The GitHub workflow performs both tests and the build.
+No `npm install` needed. GitHub Actions uses the same two commands, uploads a downloadable **optimax-homepage-static-site** ZIP artifact, and deploys only after tests pass. Actions do not deploy a pull-request branch.
 
-## Final handoff to IT (later)
+## Final IT handover
 
-When the design is approved, deliver source code, the approved `public/site-content.json`, locally hosted/exported images and videos, and tested built assets (`dist/`) alongside a note on URL base, page links, forms, and external services. **The current source ZIP does not yet contain every image/video locally**; images are currently also loaded from external Unsplash URLs and data URLs. Handoff packaging is a future phase.
+Give IT the latest **optimax-homepage-static-site** artifact from GitHub Actions (Actions → latest green run → Artifacts). It contains the rendered HTML, CSS, JavaScript and **all CMS-uploaded media**, without needing Pages CMS for visitor access. Or run `node scripts/build.mjs` on a checkout of the latest committed content and zip the `dist/` directory.
 
+The corporate hosting, real domain, appointment forms and data handling are **not** part of this demo. Don't collect patient data on this static page. Replace placeholder imagery, review medical/award/location claims and check official links before the corporate launch. Review/remove `<meta name="robots" content="noindex, nofollow">` only when officially launching.
 
-## Builder upgrade (design features — not team login)
+## Known limits & scope
 
-This updated build adds Dark/Light editor mode, full-page draft preview, universal gradients, a page/section builder, video/GIF uploads with local browser IndexedDB and a ZIP publish package. Original V2 layout and published `public/site-content.json` are preserved.
-
-**Status:** React production bundle and browser interactions must pass a green GitHub Actions run plus hands-on browser tests before this upgrade is considered verified. Designer uploads are browser-local; team login, shared drafts and 1-click Publish are **not implemented yet**. Do not invite team members to collaborate yet.
-
-**Page publishing:** choose Export for GitHub → Publish ZIP. Extract the ZIP and place `site-content.json` and any `media/*` files inside this repo's `public/` folder. GitHub Actions will build extra static page routes when the JSON lists the new pages.
-
-**Size guidance (editor guardrails, not platform quotas):** image max 2 MB, SVG max 500 KB, GIF max 5 MB, MP4/WebM max 20 MB. Prefer images under 500 KB, GIFs under 1 MB and videos under 5 MB. Browser-local assets MUST be exported and saved before switching browsers/devices or clearing browser data.
-
-**Before editing:** back up the current repo and the `site-content.json` draft. Test UI, upload, previews and public page links on the staging site. Don't store patient information here.
+- Hosted Pages CMS/GitHub integration still requires **owner authorization**. This package cannot sign in or grant access for you. Team invitations are added in the Pages CMS UI, not `.pages.yml`.
+- The demo uses the same remote demo imagery until replaced; a completely offline bundle requires uploading local photos.
+- The frozen page keeps exactly its current fixed structure; CMS doesn't add sections or move elements.
+- The original homepage output passed a byte-for-byte HTML/CSS/JS comparison. Browser screenshot automation wasn't accessible in the build environment; verify in the published GitHub staging site before approving/merging.
+- Current `?edit=1` is intentionally ignored — no editor is shipped.

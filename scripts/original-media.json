@@ -1,0 +1,10 @@
+{
+  "hero.image": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1900&q=88&fit=crop",
+  "treatments.laser_image": "https://images.unsplash.com/photo-1559757175-0eb30cd8c063?w=900&q=82&fit=crop",
+  "treatments.cataract_image": "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=900&q=82&fit=crop",
+  "treatments.screening_image": "https://images.unsplash.com/photo-1494869042583-f6c911f04b4c?w=900&q=82&fit=crop",
+  "treatments.children_image": "https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=900&q=82&fit=crop",
+  "why.image": "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=1400&q=85&fit=crop",
+  "doctors.image": "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=1300&q=82&fit=crop",
+  "contact.image": "https://images.unsplash.com/photo-1551601651-2a8555f1a136?w=1600&q=85&fit=crop"
+}
