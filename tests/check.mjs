@@ -17,6 +17,17 @@ for (const x of ['hero','treatments','why','doctors','contact'])assert(config.in
 assert(css.includes('.hero-gradient'));
 assert(js.includes('setOpen(false)'));
 assert(existsSync('dist/.nojekyll'));
+// The logo uploaded via Pages CMS must be embedded in the deployed HTML,
+// avoiding broken /media links when the site lives under /optimax-studio-v2/.
+const configuredLogo=JSON.parse(read('content/settings.json')).header_logo || '';
+if (/^\\/?media\\/.+\\.(svg|png|jpe?g|webp|gif)$/i.test(configuredLogo)) {
+  const actualFile=join(cwd,configuredLogo.replace(/^\\/+/, ''));
+  if(existsSync(actualFile) && readFileSync(actualFile).length <= 2*1024*1024) {
+    const match=html.match(/class="brand-upload"[^>]*src="data:[^;"]+;base64,([^"]+)"/);
+    assert(match, 'The CMS header logo must be embedded in the published homepage');
+    assert.deepEqual(Buffer.from(match[1], 'base64'),readFileSync(actualFile), 'Published header logo bytes must match uploaded media');
+  }
+}
 // Verify changing CMS fields edits output and respects uploaded media in project subpaths.
 const temp=mkdtempSync(join(tmpdir(),'optimax-cms-test-'));
 try {
